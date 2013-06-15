@@ -1,17 +1,25 @@
 #!/usr/bin/env ruby
 require 'socket'
 require 'fileutils'
+require 'base64'
 Dir.chdir('/home/appa')
 
-puts "Waiting for input..."
+puts "Waiting for input"
 server = TCPServer.new('0.0.0.0', 3002)
 client = server.accept
+client.sync = true
+client.binmode
 
 puts "Receiving input"
 input = File.open('input.tar.gz', 'wb')
-while !client.eof?
-	buf = client.read(1024 * 32)
+size = 0
+while true
+	line = client.readline
+	break if line == "\n"
+	buf = Base64.decode64(line)
+	size += buf.size
 	input.write(buf)
+	puts "  -> Received #{size} bytes so far"
 end
 input.close
 
@@ -40,12 +48,18 @@ end
 
 puts "Sending output"
 output = File.open("output.tar.gz", "rb")
+size = 0
 while !output.eof?
 	buf = output.read(1024 * 32)
-	client.write(buf)
+	client.write(Base64.strict_encode64(buf))
+	client.write("\n")
+	size += buf.size
+	puts "  -> Written #{size} bytes so far"
 end
+client.write("\n")
 output.close
 File.unlink("output.tar.gz")
+FileUtils.rm_rf("work")
 
 puts "Done"
 client.close

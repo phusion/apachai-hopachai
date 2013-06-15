@@ -1,22 +1,35 @@
 #!/usr/bin/env ruby
 require 'socket'
+require 'base64'
 
-container = `docker run -d -h=apachai-hopachai -u=appa -p 3002 apachai-hopachai sudo -u appa /usr/local/rvm/bin/rvm-exec 1.9.3 ruby /runner`.strip
-port = `docker port #{container} 3002`.to_i
+if ARGV[1].empty?
+	container = `docker run -d -h=apachai-hopachai -u=appa -p 3002 apachai-hopachai sudo -u appa /usr/local/rvm/bin/rvm-exec 1.9.3 ruby /runner`.strip
+	port = `docker port #{container} 3002`.to_i
+	sleep 1
+else
+	port = ARGV[1].to_i
+end
 
+#puts "Connecting to container through forwarded port #{port}"
 sock = TCPSocket.new('127.0.0.1', port)
+sock.sync = true
+sock.binmode
 
 Dir.chdir(ARGV[0])
 IO.popen("tar -c . | gzip --best", "r") do |io|
 	while !io.eof?
 		buf = io.read(1024 * 32)
-		sock.write(buf)
+		sock.write(Base64.strict_encode64(buf))
+		sock.write("\n")
 	end
-	sock.close_write
+	sock.write("\n")
 end
 
-while !sock.eof?
-	buf = sock.read(1024 * 32)
+#puts "Receiving output..."
+while true
+	line = sock.readline
+	break if line == "\n"
+	buf = Base64.decode64(line)
 	STDOUT.write(buf)
 	STDOUT.flush
 end
