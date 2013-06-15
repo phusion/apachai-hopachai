@@ -1,5 +1,6 @@
-#!/usr/local/rvm/bin/rvm-exec 1.9.3
+#!/usr/bin/env ruby
 require 'socket'
+require 'fileutils'
 Dir.chdir('/home/appa')
 
 puts "Waiting for input..."
@@ -15,9 +16,13 @@ end
 input.close
 
 puts "Extracting input"
-if !system("tar xzf input.tar.gz")
+FileUtils.rm_rf("work")
+Dir.mkdir("work")
+Dir.chdir("work")
+if !system("tar xzf ../input.tar.gz")
 	abort "runner: Cannot extract payload"
 end
+File.unlink("../input.tar.gz")
 
 puts "Running input"
 if !system("./main")
@@ -25,8 +30,12 @@ if !system("./main")
 end
 
 puts "Packaging output"
-if !system("tar -c output | gzip --best > output.tar.gz")
-	abort "runner: Error packaging output"
+if !system("tar -c . > ../output.tar")
+	abort "runner: Error creating tarball"
+end
+Dir.chdir("..")
+if !system("gzip -f --best output.tar")
+	abort "runner: Error gzipping tarball"
 end
 
 puts "Sending output"
@@ -36,6 +45,7 @@ while !output.eof?
 	client.write(buf)
 end
 output.close
+File.unlink("output.tar.gz")
 
-echo "Done"
+puts "Done"
 client.close

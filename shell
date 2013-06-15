@@ -1,0 +1,3 @@
+#!/bin/bash
+exec docker run -t -i -h=apachai-hopachai -u=appa -p 3002 apachai-hopachai \
+	sudo -u appa /bin/bash -l

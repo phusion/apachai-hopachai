@@ -1,0 +1,24 @@
+#!/usr/bin/env ruby
+require 'socket'
+
+container = `docker run -d -h=apachai-hopachai -u=appa -p 3002 apachai-hopachai sudo -u appa /usr/local/rvm/bin/rvm-exec 1.9.3 ruby /runner`.strip
+port = `docker port #{container} 3002`.to_i
+
+sock = TCPSocket.new('127.0.0.1', port)
+
+Dir.chdir(ARGV[0])
+IO.popen("tar -c . | gzip --best", "r") do |io|
+	while !io.eof?
+		buf = io.read(1024 * 32)
+		sock.write(buf)
+	end
+	sock.close_write
+end
+
+while !sock.eof?
+	buf = sock.read(1024 * 32)
+	STDOUT.write(buf)
+	STDOUT.flush
+end
+
+sock.close

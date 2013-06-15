@@ -20,3 +20,5 @@ RUN /usr/local/rvm/bin/rvm install 1.9.3
 RUN /usr/local/rvm/bin/rvm install 2.0.0
 RUN bash -lc 'rvm --default 1.9.3'
 RUN sudo -u appa bash -lc 'rvm --default 1.9.3'
+ADD src/runner /runner
+RUN chmod +x /runner
