@@ -10,6 +10,9 @@ client = server.accept
 client.sync = true
 client.binmode
 
+puts "Receiving options"
+options = Marshal.load(Base64.decode64(client.readline))
+
 puts "Receiving input"
 input = File.open('input.tar.gz', 'wb')
 size = 0
@@ -33,7 +36,7 @@ end
 File.unlink("../input.tar.gz")
 
 puts "Running input"
-if !system("./main")
+if !system("./main", *options[:args])
 	abort "runner: Error running input"
 end
 

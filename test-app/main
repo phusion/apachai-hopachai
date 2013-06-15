@@ -1,4 +1,4 @@
 #!/bin/bash
 set -e
-echo "./main started"
+echo "./main $@ started"
 cat hello.txt
