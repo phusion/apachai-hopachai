@@ -2,7 +2,7 @@
 require 'socket'
 require 'base64'
 
-if ARGV[1].empty?
+if ARGV[1].nil?
 	container = `docker run -d -h=apachai-hopachai -u=appa -p 3002 apachai-hopachai sudo -u appa /usr/local/rvm/bin/rvm-exec 1.9.3 ruby /runner`.strip
 	port = `docker port #{container} 3002`.to_i
 	sleep 1
