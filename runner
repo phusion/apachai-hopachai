@@ -1,0 +1,41 @@
+#!/usr/local/rvm/bin/rvm-exec 1.9.3
+require 'socket'
+Dir.chdir('/home/appa')
+
+puts "Waiting for input..."
+server = TCPServer.new('0.0.0.0', 3002)
+client = server.accept
+
+puts "Receiving input"
+input = File.open('input.tar.gz', 'wb')
+while !client.eof?
+	buf = client.read(1024 * 32)
+	input.write(buf)
+end
+input.close
+
+puts "Extracting input"
+if !system("tar xzf input.tar.gz")
+	abort "runner: Cannot extract payload"
+end
+
+puts "Running input"
+if !system("./main")
+	abort "runner: Error running input"
+end
+
+puts "Packaging output"
+if !system("tar -c output | gzip --best > output.tar.gz")
+	abort "runner: Error packaging output"
+end
+
+puts "Sending output"
+output = File.open("output.tar.gz", "rb")
+while !output.eof?
+	buf = output.read(1024 * 32)
+	client.write(buf)
+end
+output.close
+
+echo "Done"
+client.close
