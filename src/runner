@@ -37,7 +37,7 @@ File.unlink("../input.tar.gz")
 
 puts "Running input"
 if !system("./main", *options[:args])
-	abort "runner: Error running input"
+	puts "runner: warning: Error running input"
 end
 
 puts "Packaging output"

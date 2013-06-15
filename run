@@ -1,8 +1,11 @@
 #!/usr/bin/env ruby
+abort "This tool must be run in Ruby 1.9" if RUBY_VERSION <= '1.9'
+
 require 'socket'
 require 'base64'
 
 app_dir = ARGV.shift
+output_file = ARGV.shift
 
 if ENV['CONTAINER_PORT']
 	port = ENV['CONTAINER_PORT'].to_i
@@ -22,6 +25,7 @@ sock.write(Base64.strict_encode64(Marshal.dump(
 )))
 sock.write("\n")
 
+old_pwd = Dir.pwd
 Dir.chdir(app_dir)
 IO.popen("tar -c . | gzip --best", "r") do |io|
 	while !io.eof?
@@ -33,17 +37,21 @@ IO.popen("tar -c . | gzip --best", "r") do |io|
 end
 
 #puts "Receiving output..."
+Dir.chdir(old_pwd)
+output = File.open(output_file, 'wb')
 while true
 	line = sock.readline
 	break if line == "\n"
 	buf = Base64.decode64(line)
-	STDOUT.write(buf)
-	STDOUT.flush
+	output.write(buf)
+	output.flush
 end
+output.close
 
 sock.close
 
 if container
-	system("docker kill #{container}")
-	system("docker rm #{container}")
+	system("docker logs #{container}")
+	system("docker kill #{container} >/dev/null")
+	system("docker rm #{container} >/dev/null")
 end
