@@ -8,6 +8,8 @@ require 'thread'
 require 'logger'
 require 'base64'
 
+PORT = 3003
+
 class StatusServer < GServer
   attr_reader :notify, :clients_accepted
 
@@ -26,16 +28,17 @@ class StatusServer < GServer
     @termination_pipe[1].close
     # Wake up server thread gracefully.
     Thread.new do
-      TCPSocket.new('127.0.0.1', 3003).close
+      TCPSocket.new('127.0.0.1', port).close
     end
     join
     @termination_pipe[0].close
   end
 
   def serve(io)
+    Thread.current.abort_on_exception = true
     @notify[:mutex].synchronize do
       @clients_accepted += 1
-      @notofy[:cond].broadcast
+      @notify[:cond].broadcast
     end
 
     a, b = IO.pipe
@@ -92,8 +95,8 @@ class Runner
   private
 
   def start_status_server
-    @logger.info "Starting status server on port 3003"
-    @server = StatusServer.new(3003, '0.0.0.0')
+    @logger.info "Starting status server on port #{PORT}"
+    @server = StatusServer.new(PORT, '0.0.0.0')
     @server.start
   end
 
