@@ -115,7 +115,7 @@ module ApachaiHopachai
     end
 
     def wait_for_connection
-      sleep 1
+      sleep 0.5
       @logger.debug("Querying host port for Docker container port 3002")
       @main_port = `docker port #{@container} 3002`.to_i
       abort "Cannot query host port for Docker container port 3002" if @main_port == 0
@@ -175,12 +175,35 @@ module ApachaiHopachai
       # TODO
     end
 
+    class StopError < StandardError
+    end
+
     def begin_watching_status
-      # TODO
+      sleep 0.5
+      @logger.debug("Querying host port for Docker container port 3003")
+      @status_port = `docker port #{@container} 3003`.to_i
+      abort "Cannot query host port for Docker container port 3003" if @status_port == 0
+      @logger.debug("Host port for Docker container port 3003 is #{@status_port}")
+      @logger.info("Connecting to container status server")
+      @status_socket = TCPSocket.new('127.0.0.1', @status_port)
+      @status_socket.sync = true
+      @status_socket.binmode
+
+      @status_thread = Thread.new do
+        Thread.current.abort_on_exception = true
+        begin
+          while !@status_socket.eof?
+            @logger.info("container: " + @status_socket.readline.chomp)
+          end
+        rescue StopError
+        end
+      end
     end
 
     def stop_watching_status
-      # TODO
+      @status_thread.raise StopError.new("Stop")
+      @status_thread.join
+      @status_socket.close
     end
 
     def report_error(e)

@@ -11,11 +11,12 @@ module ApachaiHopachai
     end
 
     def start
+      parse_argv
       result = system("docker run -t -i -h=apachai-hopachai -u=appa -p 3002 -p 3003 " +
         "apachai-hopachai sudo -u appa /bin/bash -l")
       exit 1 if !result
       if @options[:commit]
-        system("docker ")
+        # TODO
       end
     end
 
@@ -23,16 +24,17 @@ module ApachaiHopachai
 
     def option_parser
       OptionParser.new do |opts|
-      nl = "\n#{' ' * 37}"
-      opts.banner = "Usage: appa shell [OPTIONS]"
-      opts.separator ""
-      
-      opts.separator "Options:"
-      opts.on("--commit", "Commit changes to the container after the shell exits") do
-        @options[:commit] = true
-      end
-      opts.on("--help", "-h", "Show help message") do
-        @options[:help] = true
+        nl = "\n#{' ' * 37}"
+        opts.banner = "Usage: appa shell [OPTIONS]"
+        opts.separator ""
+        
+        opts.separator "Options:"
+        opts.on("--commit", "Commit changes to the container after the shell exits") do
+          @options[:commit] = true
+        end
+        opts.on("--help", "-h", "Show help message") do
+          @options[:help] = true
+        end
       end
     end
 
