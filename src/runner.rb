@@ -1,18 +1,28 @@
 #!/usr/bin/env ruby
 abort "This tool must be run in Ruby 1.9" if RUBY_VERSION <= '1.9'
+STDOUT.sync = STDERR.sync = true
 
 require 'socket'
 require 'gserver'
+require 'thread'
+require 'logger'
+require 'base64'
 
 class StatusServer < GServer
+  attr_reader :notify, :clients_accepted
+
   def initialize(*args)
     super(*args)
     @termination_pipe = IO.pipe
+    @notify = {
+      :mutex => Mutex.new,
+      :cond => ConditionVariable.new
+    }
+    @clients_accepted = 0
   end
 
   def shutdown_and_join
     shutdown
-    puts "shutting down"
     @termination_pipe[1].close
     # Wake up server thread gracefully.
     Thread.new do
@@ -23,6 +33,11 @@ class StatusServer < GServer
   end
 
   def serve(io)
+    @notify[:mutex].synchronize do
+      @clients_accepted += 1
+      @notofy[:cond].broadcast
+    end
+
     a, b = IO.pipe
     pid = Process.spawn("tail", "-f", "--pid=#{$$}", "--bytes=+0", "output/runner.log",
       :in  => :in,
@@ -56,12 +71,17 @@ class StatusServer < GServer
 end
 
 class Runner
-  def initialize(argv)
-    @argv = argv.dup
+  def initialize(config)
+    @config = Marshal.load(Base64.decode64(config))
+    @argv   = @config[:args]
+    @logger = Logger.new(STDOUT)
+    @logger.level = @config[:log_level]
+    @logger.info "Runner started with config: #{@config.inspect}"
   end
 
   def start
     start_status_server
+    wait_for_first_status_server_client
     begin
       exit(execute_app)
     ensure
@@ -72,15 +92,29 @@ class Runner
   private
 
   def start_status_server
+    @logger.info "Starting status server on port 3003"
     @server = StatusServer.new(3003, '0.0.0.0')
     @server.start
   end
 
+  def wait_for_first_status_server_client
+    @logger.info "Waiting for host to connect to the status server"
+    @server.notify[:mutex].synchronize do
+      while @server.clients_accepted == 0
+        @server.notify[:cond].wait(@server.notify[:mutex])
+      end
+    end
+    @logger.info "Host connected to status server!"
+  end
+
   def stop_status_server
+    @logger.info "Shutting down status server"
     @server.shutdown_and_join
+    @logger.info "Status server shut down"
   end
 
   def execute_app
+    @logger.info "Executing ./main #{@argv.join(' ')}"
     system("./main", *@argv)
     if $?
       $?.exitstatus
@@ -90,4 +124,4 @@ class Runner
   end
 end
 
-Runner.new(ARGV).start
+Runner.new(ARGV[0]).start

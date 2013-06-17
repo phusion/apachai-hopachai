@@ -4,8 +4,8 @@ module ApachaiHopachai
   class Exited < StandardError
     attr_reader :exit_status
 
-    def initialize(exit_status)
-      super()
+    def initialize(exit_status, message = nil)
+      super(message || self.class.to_s)
       @exit_status = exit_status
     end
   end
@@ -54,11 +54,11 @@ module ApachaiHopachai
 
     def abort(message = nil)
       @logger.fatal(message) if message
-      exit 1
+      exit(1, message)
     end
 
-    def exit(code = 0)
-      raise Exited.new(code)
+    def exit(code = 0, message = nil)
+      raise Exited.new(code, message)
     end
 
     def set_log_level(name)

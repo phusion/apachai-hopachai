@@ -35,6 +35,7 @@ class Bootstrap
     @server = TCPServer.new('0.0.0.0', 3002)
     @logger.info "Waiting for connection from host"
     @client = @server.accept
+    @server.close
     @logger.info "Connection accepted"
     @client.sync = true
     @client.binmode
@@ -82,16 +83,22 @@ class Bootstrap
     tee_pid = Process.spawn("tee", "#{WORK_DIR}/output/runner.log",
       :in => a,
       :out => :out,
-      :err => :err)
+      :err => :err,
+      :close_others => true)
     a.close
 
     begin
-      args = ["/usr/local/rvm/bin/rvm-exec", "1.9.3", "ruby", "./runner.rb"]
-      args.concat(@options[:args])
+      args = [
+        "/usr/local/rvm/bin/rvm-exec", "1.9.3",
+        "stdbuf", "--output=L", "--error=L", "--",
+        "ruby", "./runner.rb",
+        Base64.strict_encode64(Marshal.dump(@options))
+      ]
       args << {
         :in => ["/dev/null", "w"],
         :out => b,
         :err => b,
+        :close_others => true,
         :chdir => WORK_DIR
       }
       pid = Process.spawn(*args)

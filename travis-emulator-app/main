@@ -1,8 +1,4 @@
 #!/usr/bin/env ruby
-STDOUT.reopen("log.txt", "a")
-STDERR.reopen(STDOUT)
-STDOUT.sync = STDERR.sync = true
-
 require 'yaml'
 require 'logger'
 

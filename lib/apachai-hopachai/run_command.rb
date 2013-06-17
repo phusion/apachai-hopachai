@@ -29,7 +29,7 @@ module ApachaiHopachai
         ensure
           close_connection
         end
-      rescue => e
+      rescue StandardError, SignalException => e
         report_error(e)
         exit 1
       ensure
@@ -92,7 +92,7 @@ module ApachaiHopachai
     def create_or_use_container
       if should_create_new_container?
         @logger.debug "Creating container"
-        command = "docker run -d -h=apachai-hopachai -u=appa -p 3002,3003 apachai-hopachai " +
+        command = "docker run -d -h=apachai-hopachai -u=appa -p 3002 -p 3003 apachai-hopachai " +
           "sudo -u appa /usr/local/rvm/bin/rvm-exec 1.9.3 ruby /bootstrap.rb"
         @container = `#{command}`.strip
         @logger.info "Created container with ID #{@container}"
@@ -137,7 +137,10 @@ module ApachaiHopachai
       write_string(@main_socket, File.read("#{ROOT}/src/runner.rb"))
 
       @logger.debug "Sending options"
-      write_string(@main_socket, Marshal.dump(:args => @argv))
+      write_string(@main_socket, Marshal.dump(
+        :args => @argv,
+        :log_level => @logger.level
+      ))
 
       @logger.debug "Sending application files"
       Dir.chdir(@options[:app_dir]) do
@@ -207,9 +210,14 @@ module ApachaiHopachai
     end
 
     def report_error(e)
-      @logger.error("ERROR: #{e.message} (#{e.class}):\n    " +
-          e.backtrace.join("\n    "))
-      @logger.error("You can see the Docker logs with: docker logs #{@container}")
+      # If the exception is an Exited then its message has already been logged.
+      if !e.is_a?(Exited)
+        @logger.error("ERROR: #{e.message} (#{e.class}):\n    " +
+            e.backtrace.join("\n    "))
+      end
+
+      system("docker logs #{@container} > appa-#{@container}.log")
+      @logger.error("Docker logs saved to appa-#{@container}.log")
     end
 
     def write_string(socket, str)
