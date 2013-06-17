@@ -77,6 +77,7 @@ class Bootstrap
   def execute_runner
     @logger.info "Executing runner"
 
+    File.open("#{WORK_DIR}/output/runner.log", "w").close
     a, b = IO.pipe
     tee_pid = Process.spawn("tee", "#{WORK_DIR}/output/runner.log",
       :in => a,
@@ -85,18 +86,21 @@ class Bootstrap
     a.close
 
     begin
-      pid = Process.spawn("/usr/local/rvm/bin/rvm-exec", "1.9.3", "ruby", "./runner.rb",
+      args = ["/usr/local/rvm/bin/rvm-exec", "1.9.3", "ruby", "./runner.rb"]
+      args.concat(@options[:args])
+      args << {
         :in => ["/dev/null", "w"],
         :out => b,
         :err => b,
         :chdir => WORK_DIR
-      )
+      }
+      pid = Process.spawn(*args)
       b.close
       Process.waitpid(pid)
       status = $?.exitstatus
       @logger.info "Runner exited with status #{status}"
       File.open("#{WORK_DIR}/output/runner.status", "w") do |f|
-        f.write(status.to_s)
+        f.puts(status.to_s)
       end
     ensure
       Process.waitpid(tee_pid)
@@ -113,7 +117,7 @@ class Bootstrap
     File.open("#{WORK_DIR}/output.tar.gz", "rb") do |f|
       size = 0
       while !f.eof?
-        buf = f.read(1024 * 32)
+        buf = f.readpartial(1024 * 32)
         write_string(@client, buf)
         size += buf.size
         @logger.debug "  -> Sent #{size} bytes so far"

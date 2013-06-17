@@ -144,7 +144,7 @@ module ApachaiHopachai
         IO.popen("tar -c . | gzip --best", "rb") do |io|
           size = 0
           while !io.eof?
-            buf = io.read(1024 * 32)
+            buf = io.readpartial(1024 * 32)
             write_string(@main_socket, buf)
             size += buf.size
             @logger.debug "  --> Written #{size} bytes so far"

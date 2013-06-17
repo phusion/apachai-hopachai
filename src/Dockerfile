@@ -20,6 +20,6 @@ RUN /usr/local/rvm/bin/rvm install 1.9.3
 RUN /usr/local/rvm/bin/rvm install 2.0.0
 RUN bash -lc 'rvm --default 1.9.3'
 RUN sudo -u appa bash -lc 'rvm --default 1.9.3'
-RUN /usr/local/rvm/bin/rvm clean all
+RUN /usr/local/rvm/bin/rvm cleanup all
 ADD src/bootstrap.rb /bootstrap.rb
 RUN chmod +x /bootstrap.rb
