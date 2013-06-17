@@ -1,0 +1,31 @@
+#!/usr/bin/env ruby
+abort "This tool must be run in Ruby 1.9" if RUBY_VERSION <= '1.9'
+
+$LOAD_PATH.unshift(File.expand_path(File.dirname(__FILE__) + "/../lib"))
+require 'apachai-hopachai/command'
+
+module ApachaiHopachai
+  def self.run(argv)
+    argv = argv.dup
+    if argv.empty?
+      run_command("help")
+    else
+      command_name = argv.shift
+      run_command(command_name, argv)
+    end
+  end
+
+private
+  def self.run_command(command_name, argv = [])
+    if klass = get_class_for_command(command_name)
+      object = klass.new(argv)
+      object.run
+      object.exit_status
+    else
+      STDERR.puts "Command #{command_name} not recognized. Please run 'appa help' for an overview of commands."
+      1
+    end
+  end
+end
+
+exit(ApachaiHopachai.run(ARGV))
