@@ -13,6 +13,7 @@ module ApachaiHopachai
   ROOT = File.expand_path(File.dirname(__FILE__) + "/../..")
 
   COMMANDS = {
+    'build' => 'BuildCommand',
     'run'   => 'RunCommand',
     'shell' => 'ShellCommand',
     'help'  => 'HelpCommand'
