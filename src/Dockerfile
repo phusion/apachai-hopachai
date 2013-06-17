@@ -1,6 +1,3 @@
-# Note: the container MUST be run with host name 'apachai-hopachai':
-# docker run -t -i -h=apachai-hopachai -u=appa apachai-hopachai sudo -u appa /bin/bash -l
-
 FROM base
 MAINTAINER Hongli Lai <hongli@phusion.nl>
 
