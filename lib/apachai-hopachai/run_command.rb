@@ -93,7 +93,7 @@ module ApachaiHopachai
       if should_create_new_container?
         @logger.debug "Creating container"
         command = "docker run -d -h=apachai-hopachai -u=appa -p 3002 -p 3003 apachai-hopachai " +
-          "sudo -u appa /usr/local/rvm/bin/rvm-exec 1.9.3 ruby /bootstrap.rb"
+          "sudo -u appa -H /usr/local/rvm/bin/rvm-exec 1.9.3 ruby /bootstrap.rb"
         @container = `#{command}`.strip
         @logger.info "Created container with ID #{@container}"
       else
