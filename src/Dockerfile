@@ -3,7 +3,7 @@ MAINTAINER Hongli Lai <hongli@phusion.nl>
 
 RUN apt-get update
 RUN apt-get install -y build-essential nano curl git
-RUN apt-get install -y apache2-mpm-worker apache2-threaded-dev
+RUN apt-get install -y apache2-mpm-worker apache2-threaded-dev libcurl4-openssl-dev
 RUN apt-get clean
 RUN adduser --disabled-password --gecos "Apachai Hopachai" appa
 RUN usermod -a -G sudo appa
