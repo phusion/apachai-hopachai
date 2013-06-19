@@ -21,6 +21,7 @@ module ApachaiHopachai
           send_input
           begin_watching_status
           begin
+            wait_for_output
             receive_and_save_output
             send_notifications
           ensure
@@ -65,7 +66,7 @@ module ApachaiHopachai
     end
 
     def parse_argv
-      @options = {}
+      @options = { :timeout => 60 * 30 }
       begin
         option_parser.parse!(@argv)
       rescue OptionParser::ParseError => e
@@ -155,6 +156,13 @@ module ApachaiHopachai
           @logger.debug "  --> Done"
           write_string(@main_socket, nil)
         end
+      end
+    end
+
+    def wait_for_output
+      if !select([@main_socket], nil, nil, @options[:timeout])
+        system("docker kill #{@container} >/dev/null")
+        abort "Timeout of #{@options[:timeout]} reached!"
       end
     end
 

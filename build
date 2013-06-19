@@ -1,3 +1,0 @@
-#!/bin/bash -e
-# Builds a Docker container.
-exec docker build - < src/Dockerfile
