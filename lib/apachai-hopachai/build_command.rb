@@ -5,7 +5,6 @@ module ApachaiHopachai
     end
 
     def start
-      @logger.level = Logger::INFO
       @logger.info("Starting 'docker build'")
       system("docker build src") || exit(1)
       @logger.info("Committing image")

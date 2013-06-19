@@ -13,6 +13,7 @@ module ApachaiHopachai
     end
 
     def start
+      @logger.level = Logger::WARN
       parse_argv
       create_or_use_container
       begin

@@ -40,7 +40,7 @@ module ApachaiHopachai
     def initialize(argv = [])
       @argv   = argv.dup
       @logger = Logger.new(STDOUT)
-      @logger.level = Logger::WARN
+      @logger.level = Logger::INFO
       @exit_status = 0
     end
 
