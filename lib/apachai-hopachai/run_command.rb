@@ -15,6 +15,7 @@ module ApachaiHopachai
     def start
       @logger.level = Logger::WARN
       parse_argv
+      check_container_image_exists
       create_or_use_container
       begin
         wait_for_connection
@@ -88,6 +89,12 @@ module ApachaiHopachai
       if !@options[:output]
         STDERR.puts "Please specify an app to run with '--output'."
         exit 1
+      end
+    end
+
+    def check_container_image_exists
+      if `docker images` !~ /apachai-hopachai/
+        abort "Container image apachai-hopachai does not exist. Please build it first with 'appa build'."
       end
     end
 

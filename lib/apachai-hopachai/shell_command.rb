@@ -12,6 +12,7 @@ module ApachaiHopachai
 
     def start
       parse_argv
+      check_container_image_exists
       last_container = find_last_container
       run_shell
       if current_container = find_container_after(last_container)
@@ -30,6 +31,8 @@ module ApachaiHopachai
       OptionParser.new do |opts|
         nl = "\n#{' ' * 37}"
         opts.banner = "Usage: appa shell [OPTIONS]"
+        opts.separator "Starts a container shell session. This allows you to play around and test" +
+          "things, or modify the container image if you specified --commit."
         opts.separator ""
         
         opts.separator "Options:"
@@ -56,6 +59,12 @@ module ApachaiHopachai
       if @options[:help]
         ShellCommand.help
         exit 0
+      end
+    end
+
+    def check_container_image_exists
+      if `docker images` !~ /apachai-hopachai/
+        abort "Container image apachai-hopachai does not exist. Please build it first with 'appa build'."
       end
     end
 
