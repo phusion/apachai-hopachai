@@ -3,7 +3,7 @@ require 'optparse'
 module ApachaiHopachai
   class ShellCommand < Command
     def self.description
-      "Start the container and run a shell in it"
+      "Run a shell inside a container"
     end
 
     def self.help

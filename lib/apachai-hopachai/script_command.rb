@@ -3,9 +3,9 @@ require 'socket'
 require 'base64'
 
 module ApachaiHopachai
-  class RunCommand < Command
+  class ScriptCommand < Command
     def self.description
-      "Run an app inside the container"
+      "Run a script inside a container"
     end
 
     def self.help
@@ -45,12 +45,12 @@ module ApachaiHopachai
     def option_parser
       OptionParser.new do |opts|
         nl = "\n#{' ' * 37}"
-        opts.banner = "Usage: appa run [OPTIONS] arguments..."
+        opts.banner = "Usage: appa script [OPTIONS] arguments..."
         opts.separator ""
         
         opts.separator "Options:"
-        opts.on("--app DIR", "-a", String, "The app to run") do |val|
-          @options[:app_dir] = val
+        opts.on("--script DIR", "-a", String, "The script to run") do |val|
+          @options[:script_dir] = val
         end
         opts.on("--container ID", String, "Use existing container instead of creating one") do |val|
           @options[:container] = val
@@ -82,8 +82,8 @@ module ApachaiHopachai
         RunCommand.help
         exit 0
       end
-      if !@options[:app_dir]
-        STDERR.puts "Please specify an app to run with '--app'."
+      if !@options[:script_dir]
+        STDERR.puts "Please specify an app to run with '--script'."
         exit 1
       end
       if !@options[:output]
@@ -152,7 +152,7 @@ module ApachaiHopachai
       ))
 
       @logger.debug "Sending application files"
-      Dir.chdir(@options[:app_dir]) do
+      Dir.chdir(@options[:script_dir]) do
         IO.popen("tar -c . | gzip --best", "rb") do |io|
           size = 0
           while !io.eof?
