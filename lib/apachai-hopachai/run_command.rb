@@ -18,7 +18,7 @@ module ApachaiHopachai
         clone_repo
         extract_config_and_info
         environments = infer_test_environments
-        #run_in_environments(environments)
+        run_in_environments(environments)
         save_reports(environments)
         send_notifications(environments)
       ensure
@@ -46,6 +46,9 @@ module ApachaiHopachai
         opts.separator ""
         
         opts.separator "Options:"
+        opts.on("--report FILENAME", String, "Write to the given report file") do |val|
+          @options[:report] = val
+        end
         opts.on("--limit N", Integer, "Limit the number of environments to test. Default: test all environments") do |val|
           @options[:limit] = val
         end
@@ -59,7 +62,7 @@ module ApachaiHopachai
     end
 
     def parse_argv
-      @options = {}
+      @options = { :report => "appa-report-#{Time.now.strftime("%Y-%m-%d %H:%M:%S")}.html" }
       begin
         option_parser.parse!(@argv)
       rescue OptionParser::ParseError => e
@@ -206,12 +209,12 @@ module ApachaiHopachai
     end
 
     def save_reports(environments)
+      @logger.info "Saving report to #{@options[:report]}"
       @jobs = []
       @info[:duration] = distance_of_time_in_hours_and_minutes(@info[:date] - 30, Time.now)
 
       environments.each_with_index do |env, num|
-        #output_dir = "#{@work_dir}/output-#{num}"
-        output_dir = "output-0"
+        output_dir = "#{@work_dir}/output-#{num}"
         @jobs << {
           :id     => num + 1,
           :name   => "##{num + 1}",
@@ -230,7 +233,7 @@ module ApachaiHopachai
 
       template = ERB.new(File.read("#{ROOT}/src/report.html.erb"))
       report = template.result(binding)
-      File.open("report.html", "w") do |f|
+      File.open(@options[:report], "w") do |f|
         f.write(report)
       end
     end
