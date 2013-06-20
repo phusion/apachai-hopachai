@@ -33,7 +33,6 @@ end
 
 def start
 	Dir.chdir("app")
-	log CONFIG.inspect
 	run_command_list(CONFIG['before_install'])
 	run_script(CONFIG)
 	log "Apachai Hopachai finished."

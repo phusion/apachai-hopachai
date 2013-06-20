@@ -78,7 +78,7 @@ module ApachaiHopachai
       end
 
       if @options[:help]
-        RunCommand.help
+        ScriptCommand.help
         exit 0
       end
       if !@options[:script_dir]
