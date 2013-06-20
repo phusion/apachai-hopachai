@@ -74,6 +74,8 @@ module ApachaiHopachai
         @logger.level = Logger::INFO
       when "debug"
         @logger.level = Logger::DEBUG
+      when /^[0-9]+$/
+        @logger.level = name.to_i
       else
         abort "Unknown log level #{name.inspect}"
       end

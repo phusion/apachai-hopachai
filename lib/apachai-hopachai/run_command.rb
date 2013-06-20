@@ -10,6 +10,14 @@ module ApachaiHopachai
       puts new([]).send(:option_parser)
     end
 
+    def initialize(*args)
+      super(*args)
+      @options = {
+        :jobs   => 1,
+        :report => "appa-report-#{Time.now.strftime("%Y-%m-%d %H:%M:%S")}.html"
+      }
+    end
+
     def start
       require_libs
       parse_argv
@@ -34,20 +42,23 @@ module ApachaiHopachai
       require 'safe_yaml'
       require 'semaphore'
       require 'base64'
-      require 'optparse'
       require 'thwait'
       require 'erb'
     end
 
     def option_parser
+      require 'optparse'
       OptionParser.new do |opts|
         nl = "\n#{' ' * 37}"
         opts.banner = "Usage: appa run [OPTIONS] GIT_URL"
         opts.separator ""
         
         opts.separator "Options:"
-        opts.on("--report FILENAME", String, "Write to the given report file") do |val|
+        opts.on("--report FILENAME", "-r", String, "Write to the given report file") do |val|
           @options[:report] = val
+        end
+        opts.on("--jobs N", "-j", Integer, "Number of concurrent jobs to run. Default: #{@options[:jobs]}") do |val|
+          @options[:jobs] = val
         end
         opts.on("--limit N", Integer, "Limit the number of environments to test. Default: test all environments") do |val|
           @options[:limit] = val
@@ -62,7 +73,6 @@ module ApachaiHopachai
     end
 
     def parse_argv
-      @options = { :report => "appa-report-#{Time.now.strftime("%Y-%m-%d %H:%M:%S")}.html" }
       begin
         option_parser.parse!(@argv)
       rescue OptionParser::ParseError => e
@@ -173,7 +183,7 @@ module ApachaiHopachai
     end
 
     def run_in_environments(environments)
-      semaphore = Semaphore.new(1)
+      semaphore = Semaphore.new(@options[:jobs])
       threads = []
       environments.each_with_index do |env, i|
         threads << Thread.new(env, i) do |_env, _i|
@@ -198,6 +208,7 @@ module ApachaiHopachai
       script_command = ScriptCommand.new([
         "--script=#{@work_dir}/input",
         "--output=#{output_dir}/output.tar.gz",
+        "--log-level=#{@logger.level}",
         '--',
         @options[:repository],
         Base64.strict_encode64(Marshal.dump(env))
