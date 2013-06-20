@@ -60,10 +60,10 @@ class StatusServer < GServer
         if ios.include?(a)
           begin
             buf = a.readpartial(1024 * 32)
-          rescue EOFError
+            io.write(buf)
+          rescue EOFError, Errno::EPIPE, Errno::ECONNRESET
             break
           end
-          io.write(buf)
         else
           break
         end
