@@ -13,7 +13,6 @@ module ApachaiHopachai
     end
 
     def start
-      @logger.level = Logger::WARN
       parse_argv
       check_container_image_exists
       create_or_use_container
@@ -198,15 +197,29 @@ module ApachaiHopachai
     end
 
     def begin_watching_status
-      sleep 0.5
       @logger.debug("Querying host port for Docker container port 3003")
       @status_port = `docker port #{@container} 3003`.to_i
       abort "Cannot query host port for Docker container port 3003" if @status_port == 0
       @logger.debug("Host port for Docker container port 3003 is #{@status_port}")
       @logger.info("Connecting to container status server")
-      @status_socket = TCPSocket.new('127.0.0.1', @status_port)
-      @status_socket.sync = true
-      @status_socket.binmode
+      
+      while true
+        sleep 0.1
+        @status_socket = TCPSocket.new('127.0.0.1', @status_port)
+        @status_socket.sync = true
+        @status_socket.binmode
+        begin
+          handshake = @status_socket.readline
+        rescue EOFError
+          handshake = nil
+        end
+        if handshake == "You have control\n"
+          break
+        else
+          @status_socket.close
+        end
+      end
+      @logger.info("Connected to status server!")
 
       @status_thread = Thread.new do
         Thread.current.abort_on_exception = true

@@ -14,6 +14,7 @@ module ApachaiHopachai
 
   COMMANDS = {
     'build'  => 'BuildCommand',
+    'run'    => 'RunCommand',
     'script' => 'ScriptCommand',
     'shell'  => 'ShellCommand',
     'help'   => 'HelpCommand'

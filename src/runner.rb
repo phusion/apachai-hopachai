@@ -41,6 +41,8 @@ class StatusServer < GServer
       @notify[:cond].broadcast
     end
 
+    io.puts "You have control"
+
     a, b = IO.pipe
     pid = Process.spawn("tail", "-f", "--pid=#{$$}", "--bytes=+0", "output/runner.log",
       :in  => :in,
