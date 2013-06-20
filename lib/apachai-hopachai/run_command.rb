@@ -16,11 +16,11 @@ module ApachaiHopachai
       create_work_dir
       begin
         clone_repo
-        extract_config
+        extract_config_and_info
         environments = infer_test_environments
-        run_in_environments(environments)
-        save_reports
-        send_notifications
+        #run_in_environments(environments)
+        save_reports(environments)
+        send_notifications(environments)
       ensure
         destroy_work_dir
       end
@@ -32,8 +32,11 @@ module ApachaiHopachai
       require 'apachai-hopachai/script_command'
       require 'tmpdir'
       require 'safe_yaml'
+      require 'semaphore'
       require 'base64'
       require 'optparse'
+      require 'thwait'
+      require 'erb'
     end
 
     def option_parser
@@ -96,8 +99,16 @@ module ApachaiHopachai
       end
     end
 
-    def extract_config
-      @logger.info "Extracting Travis config file"
+    def extract_config_and_info
+      @info = {
+        :date => Time.now
+      }
+
+      Dir.chdir("#{@work_dir}/input/app") do
+        lines = `git show --pretty='format:%h\n%an\n%cn\n%s' -s`.split("\n")
+        @info[:commit], @info[:author], @info[:committer], @info[:subject] = lines
+      end
+
       FileUtils.cp("#{@work_dir}/input/app/.travis.yml", "#{@work_dir}/travis.yml")
     end
 
@@ -159,32 +170,91 @@ module ApachaiHopachai
     end
 
     def run_in_environments(environments)
+      semaphore = Semaphore.new(1)
+      threads = []
       environments.each_with_index do |env, i|
-        @logger.info "##{i} Running in environment: #{inspect_env(env)}"
-        Dir.mkdir("#{@work_dir}/output-#{i}")
-        File.open("#{@work_dir}/output-#{i}/environment.txt", "w") do |f|
-          f.puts(inspect_env(env))
+        threads << Thread.new(env, i) do |_env, _i|
+          Thread.current.abort_on_exception = true
+          semaphore.synchronize do
+            run_in_environment(_env, _i)
+          end
         end
+      end
+      ThreadsWait.all_waits(*threads)
+    end
 
-        script_command = ScriptCommand.new([
-          "--script=#{@work_dir}/input",
-          "--output=#{@work_dir}/output-#{i}/output.tar.gz",
-          '--',
-          @options[:repository],
-          Base64.strict_encode64(Marshal.dump(env))
-        ])
-        script_command.run
-        Dir.chdir("#{@work_dir}/output-#{i}") do
-          system "tar xzf output.tar.gz"
-          File.unlink("output.tar.gz")
-        end
+    def run_in_environment(env, num)
+      @logger.info "##{num} Running in environment: #{inspect_env(env)}"
+      output_dir = "#{@work_dir}/output-#{num}"
+      
+      Dir.mkdir(output_dir)
+      File.open("#{output_dir}/environment.txt", "w") do |f|
+        f.puts(inspect_env(env))
+      end
+
+      script_command = ScriptCommand.new([
+        "--script=#{@work_dir}/input",
+        "--output=#{output_dir}/output.tar.gz",
+        '--',
+        @options[:repository],
+        Base64.strict_encode64(Marshal.dump(env))
+      ])
+      script_command.run
+
+      system("tar xzf output.tar.gz", :chdir => output_dir)
+      File.unlink("#{output_dir}/output.tar.gz")
+    end
+
+    def save_reports(environments)
+      @jobs = []
+      @info[:duration] = distance_of_time_in_hours_and_minutes(@info[:date] - 30, Time.now)
+
+      environments.each_with_index do |env, num|
+        #output_dir = "#{@work_dir}/output-#{num}"
+        output_dir = "output-0"
+        @jobs << {
+          :id     => num + 1,
+          :name   => "##{num + 1}",
+          :passed => File.read("#{output_dir}/runner.status") == "0\n",
+          :duration => "TODO",
+          :finished => "TODO",
+          :env    => inspect_env(env),
+          :log    => File.open("#{output_dir}/runner.log", "rb") { |f| f.read }
+        }
+      end
+
+      @info[:passed] = @jobs.all? { |job| job[:passed] }
+      @info[:state]  = @info[:passed] ? "Passed" : "Failed"
+      @info[:finished] = "TODO"
+      @info[:logo]   = File.open("#{ROOT}/src/logo.png", "rb") { |f| f.read }
+
+      template = ERB.new(File.read("#{ROOT}/src/report.html.erb"))
+      report = template.result(binding)
+      File.open("report.html", "w") do |f|
+        f.write(report)
       end
     end
 
-    def save_reports
+    def send_notifications(environments)
     end
 
-    def send_notifications
+    def h(text)
+      ERB::Util.h(text)
+    end
+
+    def distance_of_time_in_hours_and_minutes(from_time, to_time)
+      from_time = from_time.to_time if from_time.respond_to?(:to_time)
+      to_time = to_time.to_time if to_time.respond_to?(:to_time)
+      dist = (to_time - from_time).to_i
+      minutes = (dist.abs / 60).round
+      hours = minutes / 60
+      minutes = minutes - (hours * 60)
+      seconds = dist - (hours * 3600) - (minutes * 60)
+
+      words = ''
+      words << "#{hours} #{hours > 1 ? 'hours' : 'hour' } " if hours > 0
+      words << "#{minutes} min " if minutes > 0
+      words << "#{seconds} sec"
     end
   end
 end
