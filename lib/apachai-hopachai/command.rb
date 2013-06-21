@@ -18,11 +18,12 @@ module ApachaiHopachai
   ROOT = File.expand_path(File.dirname(__FILE__) + "/../..")
 
   COMMANDS = {
-    'build'  => 'BuildCommand',
-    'run'    => 'RunCommand',
-    'script' => 'ScriptCommand',
-    'shell'  => 'ShellCommand',
-    'help'   => 'HelpCommand'
+    'build'   => 'BuildCommand',
+    'prepare' => 'PrepareCommand',
+    'run'     => 'RunCommand',
+    'script'  => 'ScriptCommand',
+    'shell'   => 'ShellCommand',
+    'help'    => 'HelpCommand'
   }
 
   def self.get_class_for_command(command_name)
@@ -88,6 +89,28 @@ module ApachaiHopachai
         @logger.level = name.to_i
       else
         abort "Unknown log level #{name.inspect}"
+      end
+    end
+
+    def set_log_file(log_file)
+      file = File.open(log_file, "a")
+      STDOUT.reopen(file)
+      STDERR.reopen(file)
+      STDOUT.sync = STDERR.sync = file.sync = true
+    end
+
+    def daemonize(logger)
+      logger.info("Daemonization requested.")
+      pid = fork
+      if pid
+        # Parent
+        exit!(0)
+      else
+        # Child
+        trap "HUP", "IGNORE"
+        STDIN.reopen("/dev/null", "r")
+        Process.setsid
+        logger.info("Daemonized into background: PID #{$$}")
       end
     end
   end
