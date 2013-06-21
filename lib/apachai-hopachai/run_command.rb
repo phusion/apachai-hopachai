@@ -5,18 +5,11 @@ module ApachaiHopachai
     include CommandUtils
 
     def self.description
-      "Run tests"
+      "Run a test"
     end
 
     def self.help
       puts new([]).send(:option_parser)
-    end
-
-    def initialize(*args)
-      super(*args)
-      @options = {
-        :report => "appa-report-#{Time.now.strftime("%Y-%m-%d-%H:%M:%S")}.html"
-      }
     end
 
     def start
@@ -72,6 +65,7 @@ module ApachaiHopachai
     end
 
     def parse_argv
+      @options = {}
       begin
         option_parser.parse!(@argv)
       rescue OptionParser::ParseError => e
@@ -99,9 +93,12 @@ module ApachaiHopachai
     def read_and_verify_plan
       @planset_path = File.dirname(@plan_path)
       abort "The given plan is not in a planset" if @planset_path == @plan_path
-      abort "The given planset is not complete" if !File.exist?("#{@planset_path}/created")
-      @info = YAML.load_file("#{@plan_path}/info.yml", :safe => true)
-      abort "Plan format version #{@info['file_version']} is unsupported" if @info['file_version'] != '1.0'
+      abort "The given planset is not complete" if !File.exist?("#{@planset_path}/info.yml")
+      @planset_info = YAML.load_file("#{@planset_path}/info.yml", :safe => true)
+      @plan_info = YAML.load_file("#{@plan_path}/info.yml", :safe => true)
+      if @planset_info['file_version'] != '1.0'
+        abort "Plan format version #{@planset_info['file_version']} is unsupported"
+      end
       abort "Plan is already being processed" if plan_processing?
       abort "Plan has already been processed" if plan_processed?
     end
@@ -131,7 +128,7 @@ module ApachaiHopachai
     end
 
     def run_plan
-      @logger.info "# Running plan with environment: #{@info[:env_name]}"
+      @logger.info "# Running plan with environment: #{@plan_info[:env_name]}"
       set_plan_processing!
 
       @run_result = { 'start_time' => Time.now }

@@ -138,8 +138,14 @@ module ApachaiHopachai
     def extract_repo_info
       @repo_info = {}
       Dir.chdir("#{@work_dir}/app") do
-        lines = `git show --pretty='format:%h\n%an\n%cn\n%s' -s`.split("\n")
-        @repo_info['commit'], @repo_info['author'], @repo_info['committer'], @repo_info['subject'] = lines
+        lines = `git show --pretty='format:%h\n%H\n%an\n%ae\n%cn\n%ce\n%s' -s`.split("\n")
+        @repo_info['commit'],
+          @repo_info['sha'],
+          @repo_info['author'],
+          @repo_info['author_email'],
+          @repo_info['committer'],
+          @repo_info['committer_email'],
+          @repo_info['subject'] = lines
       end
     end
 
@@ -221,7 +227,7 @@ module ApachaiHopachai
               YAML.dump(env, io)
             end
             File.open("#{plan_path}/info.yml", "w") do |io|
-              YAML.dump(generate_preparation_info(env, i), io)
+              YAML.dump(plan_info_for(env, i), io)
             end
           rescue Exception
             FileUtils.remove_entry_secure(plan_path)
@@ -234,7 +240,9 @@ module ApachaiHopachai
         end
 
         @logger.info "Committing planset"
-        File.open("#{planset_path}/created", "w").close
+        File.open("#{planset_path}/info.yml", "w") do |io|
+          YAML.dump(planset_info, io)
+        end
       ensure
         if @options[:save_paths]
           save_file.close
@@ -251,14 +259,22 @@ module ApachaiHopachai
       File.expand_path("#{planset_path}/#{i + 1}.appa-plan")
     end
 
-    def generate_preparation_info(env, i)
+    def plan_info_for(env, i)
       @repo_info.merge(
         'id' => i + 1,
         'name' => "##{i + 1}",
-        'file_version' => '1.0',
         'preparation_time' => Time.now,
         'env_name' => inspect_env(env)
       )
+    end
+
+    def planset_info
+      result = @repo_info.merge(
+        'repo_url' => @options[:repository],
+        'file_version' => '1.0',
+        'preparation_time' => Time.now
+      )
+      result
     end
   end
 end
