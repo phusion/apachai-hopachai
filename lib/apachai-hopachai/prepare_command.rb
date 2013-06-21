@@ -1,5 +1,9 @@
+require 'apachai-hopachai/command_utils'
+
 module ApachaiHopachai
   class PrepareCommand < Command
+    include CommandUtils
+
     COMBINATORIC_KEYS = ['rvm', 'env'].freeze
 
     def self.description
@@ -17,12 +21,12 @@ module ApachaiHopachai
     def start
       require_libs
       parse_argv
-      set_log_file(@options[:log_file]) if @options[:log_file]
-      daemonize(@logger) if @options[:daemonize]
+      maybe_set_log_file
+      maybe_daemonize
       create_work_dir
       begin
         clone_repo
-        extract_config_and_info
+        extract_repo_info
         environments = infer_test_environments
         create_plans(environments)
       ensure
@@ -77,7 +81,7 @@ module ApachaiHopachai
       rescue OptionParser::ParseError => e
         STDERR.puts e
         STDERR.puts
-        STDERR.puts "Please see 'appa help run' for valid options."
+        STDERR.puts "Please see 'appa help prepare' for valid options."
         exit 1
       end
 
@@ -131,14 +135,11 @@ module ApachaiHopachai
       end
     end
 
-    def extract_config_and_info
-      @info = {
-        :file_version => '1.0',
-        :start_time => Time.now
-      }
+    def extract_repo_info
+      @repo_info = {}
       Dir.chdir("#{@work_dir}/app") do
         lines = `git show --pretty='format:%h\n%an\n%cn\n%s' -s`.split("\n")
-        @info[:commit], @info[:author], @info[:committer], @info[:subject] = lines
+        @repo_info['commit'], @repo_info['author'], @repo_info['committer'], @repo_info['subject'] = lines
       end
     end
 
@@ -205,35 +206,59 @@ module ApachaiHopachai
       end
 
       begin
-        environments.each_with_index do |env, i|
-          @logger.info "Preparing plan ##{i + 1}: #{inspect_env(env)}"
-          path = File.expand_path(@options[:output_dir] +
-            "/appa-#{Time.now.strftime("%Y-%m-%d-%H:%M:%S")}-#{i + 1}")
-          @logger.info "Saving plan into #{path}"
+        @logger.info "Creating planset: #{planset_path}"
+        Dir.mkdir(planset_path)
 
+        environments.each_with_index do |env, i|
+          plan_path = path_for_environment(env, i)
+          @logger.info "Preparing plan ##{i + 1}: #{inspect_env(env)}"
+          @logger.info "Saving plan into #{plan_path}"
+
+          Dir.mkdir(plan_path)
           begin
-            Dir.mkdir(path)
-            FileUtils.cp_r(Dir["#{@work_dir}/*"], path)
-            File.open("#{path}/travis.yml", "w") do |io|
+            FileUtils.cp_r(Dir["#{@work_dir}/*"], plan_path)
+            File.open("#{plan_path}/travis.yml", "w") do |io|
               YAML.dump(env, io)
             end
-            File.open("#{path}/info.yml", "w") do |io|
-              YAML.dump(@info, io)
+            File.open("#{plan_path}/info.yml", "w") do |io|
+              YAML.dump(generate_preparation_info(env, i), io)
             end
           rescue Exception
-            FileUtils.remove_entry_secure(path)
+            FileUtils.remove_entry_secure(plan_path)
             raise
           end
           if save_file
-            save_file.puts(path)
+            save_file.puts(plan_path)
             save_file.flush
           end
         end
+
+        @logger.info "Committing planset"
+        File.open("#{planset_path}/created", "w").close
       ensure
         if @options[:save_paths]
           save_file.close
         end
       end
+    end
+
+    def planset_path
+      @planset_path ||= File.expand_path(@options[:output_dir] +
+        "/" + Time.now.strftime("%Y-%m-%d-%H:%M:%S") + ".appa-planset")
+    end
+
+    def path_for_environment(env, i)
+      File.expand_path("#{planset_path}/#{i + 1}.appa-plan")
+    end
+
+    def generate_preparation_info(env, i)
+      @repo_info.merge(
+        'id' => i + 1,
+        'name' => "##{i + 1}",
+        'file_version' => '1.0',
+        'preparation_time' => Time.now,
+        'env_name' => inspect_env(env)
+      )
     end
   end
 end

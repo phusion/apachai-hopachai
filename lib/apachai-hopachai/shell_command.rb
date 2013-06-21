@@ -57,7 +57,7 @@ module ApachaiHopachai
       end
 
       if @options[:help]
-        ShellCommand.help
+        self.class.help
         exit 0
       end
     end

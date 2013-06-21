@@ -1,9 +1,11 @@
+require 'apachai-hopachai/command_utils'
+
 module ApachaiHopachai
   class RunCommand < Command
-    COMBINATORIC_KEYS = ['rvm', 'env'].freeze
+    include CommandUtils
 
     def self.description
-      "Run test"
+      "Run tests"
     end
 
     def self.help
@@ -13,7 +15,6 @@ module ApachaiHopachai
     def initialize(*args)
       super(*args)
       @options = {
-        :jobs   => 1,
         :report => "appa-report-#{Time.now.strftime("%Y-%m-%d-%H:%M:%S")}.html"
       }
     end
@@ -21,18 +22,14 @@ module ApachaiHopachai
     def start
       require_libs
       parse_argv
-      initialize_log_file
+      maybe_set_log_file
       maybe_daemonize
+      read_and_verify_plan
       create_work_dir
       begin
-        clone_repo
-        extract_config_and_info
-        environments = infer_test_environments
-        run_in_environments(environments)
-        save_reports(environments)
-        send_report_notification(environments)
+        run_plan
+        save_result
       rescue StandardError, SignalException => e
-        send_error_notification(e)
         exit(log_error(e))
       ensure
         destroy_work_dir
@@ -45,33 +42,19 @@ module ApachaiHopachai
       require 'apachai-hopachai/script_command'
       require 'tmpdir'
       require 'safe_yaml'
-      require 'semaphore'
-      require 'ansi2html/main'
-      require 'base64'
-      require 'stringio'
       require 'thwait'
-      require 'erb'
     end
 
     def option_parser
       require 'optparse'
       OptionParser.new do |opts|
         nl = "\n#{' ' * 37}"
-        opts.banner = "Usage: appa run [OPTIONS] GIT_URL [COMMIT]"
+        opts.banner = "Usage: appa run [OPTIONS] PLAN_PATH..."
         opts.separator ""
         
         opts.separator "Options:"
-        opts.on("--report FILENAME", "-r", String, "Write to the given report file") do |val|
-          @options[:report] = val
-        end
-        opts.on("--jobs N", "-j", Integer, "Number of concurrent jobs to run. Default: #{@options[:jobs]}") do |val|
-          @options[:jobs] = val
-        end
         opts.on("--limit N", Integer, "Limit the number of environments to test. Default: test all environments") do |val|
           @options[:limit] = val
-        end
-        opts.on("--email EMAIL", "-e", String, "Send email when done") do |val|
-          @options[:email] = val
         end
         opts.on("--daemonize", "-d", "Daemonize into background") do
           @options[:daemonize] = true
@@ -99,255 +82,102 @@ module ApachaiHopachai
       end
 
       if @options[:help]
-        RunCommand.help
+        self.class.help
         exit 0
       end
-      if @argv.size < 1 || @argv.size > 2
-        RunCommand.help
+      if @argv.size != 1
+        self.class.help
         exit 1
       end
       if @options[:daemonize] && !@options[:log_file]
         abort "If you set --daemonize then you must also set --log-file."
       end
 
-      @options[:repository] = @argv[0]
-      @options[:commit] = @argv[1]
+      @plan_path = File.expand_path(@argv[0])
     end
 
-    def initialize_log_file
-      if @options[:log_file]
-        file = File.open(@options[:log_file], "a")
-        STDOUT.reopen(file)
-        STDERR.reopen(file)
-        STDOUT.sync = STDERR.sync = file.sync = true
-      end
+    def read_and_verify_plan
+      @planset_path = File.dirname(@plan_path)
+      abort "The given plan is not in a planset" if @planset_path == @plan_path
+      abort "The given planset is not complete" if !File.exist?("#{@planset_path}/created")
+      @info = YAML.load_file("#{@plan_path}/info.yml", :safe => true)
+      abort "Plan format version #{@info['file_version']} is unsupported" if @info['file_version'] != '1.0'
+      abort "Plan is already being processed" if plan_processing?
+      abort "Plan has already been processed" if plan_processed?
     end
 
-    def maybe_daemonize
-      if @options[:daemonize]
-        @logger.info("Daemonization requested.")
-        pid = fork
-        if pid
-          # Parent
-          exit!(0)
-        else
-          # Child
-          trap "HUP", "IGNORE"
-          STDIN.reopen("/dev/null", "r")
-          Process.setsid
-          @logger.info("Daemonized into background: PID #{$$}")
-        end
-      end
+    def plan_processing?
+      File.exist?("#{@plan_path}/processing")
+    end
+
+    def set_plan_processing!
+      File.open("#{@plan_path}/processing", "w").close
+    end
+
+    def unset_plan_processing!
+      File.unlink("#{@plan_path}/processing")
+    end
+
+    def plan_processed?
+      File.exist?("#{@plan_path}/result.yml")
     end
 
     def create_work_dir
       @work_dir = Dir.mktmpdir("appa-")
-      Dir.mkdir("#{@work_dir}/input")
-      FileUtils.cp("#{ROOT}/travis-emulator-app/main", "#{@work_dir}/input/main")
     end
 
     def destroy_work_dir
       FileUtils.remove_entry_secure(@work_dir)
     end
 
-    def clone_repo
-      if @options[:commit]
-        @logger.info "Cloning from #{@options[:repository]}, commit #{@options[:commit]}"
-      else
-        @logger.info "Cloning from #{@options[:repository]}"
-      end
+    def run_plan
+      @logger.info "# Running plan with environment: #{@info[:env_name]}"
+      set_plan_processing!
 
-      args = []
-      if !@options[:commit]
-        args << "--single-branch" if `git clone --help` =~ /--single-branch/
-        args << "--depth 1"
-      end
-
-      if !system("git clone #{args.join(' ')} #{@options[:repository]} '#{@work_dir}/input/app'")
-        abort "git clone failed"
-      end
-
-      if @options[:commit]
-        system("git", "checkout", "-q", @options[:commit], :chdir => "#{@work_dir}/input/app")
-      end
-    end
-
-    def extract_config_and_info
-      @info = {
-        :date => Time.now
-      }
-
-      Dir.chdir("#{@work_dir}/input/app") do
-        lines = `git show --pretty='format:%h\n%an\n%cn\n%s' -s`.split("\n")
-        @info[:commit], @info[:author], @info[:committer], @info[:subject] = lines
-      end
-
-      FileUtils.cp("#{@work_dir}/input/app/.travis.yml", "#{@work_dir}/travis.yml")
-    end
-
-    def infer_test_environments
-      config = YAML.load_file("#{@work_dir}/travis.yml", :safe => true)
-      environments = []
-      traverse_combinations(0, environments, config, COMBINATORIC_KEYS)
-      environments.sort! do |a, b|
-        inspect_env(a) <=> inspect_env(b)
-      end
+      @run_result = { 'start_time' => Time.now }
+      run_plan_script_and_extract_result
       
-      @logger.info "Inferred #{environments.size} test environments"
-      environments.each do |env|
-        @logger.debug "  #{inspect_env(env)}"
-      end
-
-      if @options[:limit]
-        @logger.info "Limiting to #{@options[:limit]} environments"
-        environments = environments.slice(0, @options[:limit])
-      end
-
-      environments
+      FileUtils.cp("#{@work_dir}/runner.log", "#{@plan_path}/output.log")
+      @run_result['status'] = File.read("#{@work_dir}/runner.status").to_i
+      @run_result['passed'] = @run_result['status'] == 0
+      @run_result['end_time'] = Time.now
+      @run_result['duration'] = distance_of_time_in_hours_and_minutes(
+        @run_result['start_time'], @run_result['end_time'])
     end
 
-    def traverse_combinations(level, environments, current, remaining_combinatoric_keys)
-      indent = "  " * level
-      @logger.debug "#{indent}traverse_combinations: #{remaining_combinatoric_keys.inspect}"
-      remaining_combinatoric_keys = remaining_combinatoric_keys.dup
-      key = remaining_combinatoric_keys.shift
-      if values = current[key]
-        values = [values] if !values.is_a?(Array)
-        values.each do |val|
-          @logger.debug "#{indent}  val = #{val.inspect}"
-          current = current.dup
-          current[key] = val
-          if remaining_combinatoric_keys.empty?
-            @logger.debug "#{indent}  Inferred environment: #{inspect_env(current)}"
-            environments << current
-          else
-            traverse_combinations(level + 1, environments, current, remaining_combinatoric_keys)
-          end
-        end
-      elsif !remaining_combinatoric_keys.empty?
-        traverse_combinations(level, environments, current, remaining_combinatoric_keys)
-      else
-        @logger.debug "#{indent}  Inferred environmentt: #{inspect_env(current)}"
-        environments << current
-      end
-    end
+    def run_plan_script_and_extract_result
+      script_command = ScriptCommand.new([
+        "--script=#{@plan_path}",
+        "--output=#{@work_dir}/output.tar.gz",
+        "--log-level=#{@logger.level}"
+      ])
+      # Let any exceptions propagate so that bugs in Apachai Hopachai trigger
+      # a stack trace. If the test inside the container fails, no exception
+      # will be thrown. Instead we'll find a non-zero status in the status file.
+      script_command.start
 
-    def inspect_env(env)
-      result = []
-      COMBINATORIC_KEYS.each do |key|
-        if val = env[key]
-          result << "#{key}=#{val}"
-        end
-      end
-      result.join("; ")
-    end
-
-    def run_in_environments(environments)
-      semaphore = Semaphore.new(@options[:jobs])
-      threads = []
-      environments.each_with_index do |env, i|
-        threads << Thread.new(env, i) do |_env, _i|
-          Thread.current.abort_on_exception = true
-          semaphore.synchronize do
-            run_in_environment(_env, _i)
-          end
-        end
-      end
+      pid = Process.spawn("tar", "xzf", "output.tar.gz",
+        :chdir => @work_dir)
       begin
-        ThreadsWait.all_waits(*threads)
-      rescue Exception => e
-        @logger.warn "Exception #{e} (#{e.class}) raised, aborting jobs"
-        threads.each { |t| t.raise(ThreadInterrupted, "Main thread aborted this job") }
-        ThreadsWait.all_waits(*threads)
+        Process.waitpid(pid)
+      rescue SignalException
+        Process.kill('TERM', pid)
+        Process.waitpid(pid) rescue nil
         raise
       end
-    end
 
-    def run_in_environment(env, num)
-      @logger.info "##{num} Running in environment: #{inspect_env(env)}"
-      output_dir = "#{@work_dir}/output-#{num}"
-      
-      Dir.mkdir(output_dir)
-      File.open("#{output_dir}/environment.txt", "w") do |f|
-        f.puts(inspect_env(env))
-      end
-
-      script_command = ScriptCommand.new([
-        "--script=#{@work_dir}/input",
-        "--output=#{output_dir}/output.tar.gz",
-        "--log-level=#{@logger.level}",
-        '--',
-        @options[:repository],
-        Base64.strict_encode64(Marshal.dump(env))
-      ])
-      script_command.run
-
-      begin
-        pid = Process.spawn("tar", "xzvf", "output.tar.gz",
-          :chdir => output_dir)
-        begin
-          Process.waitpid(pid)
-          exit($?.exitstatus)
-        rescue ThreadInterrupted
-          Process.kill('TERM', pid)
-          Process.waitpid(pid) rescue nil
-          raise
-        end
-      ensure
-        File.unlink("#{output_dir}/output.tar.gz") rescue nil
-      end
-    rescue ThreadInterrupted
-      1
-    rescue Exited => e
-      e.exit_status
-    end
-
-    def save_reports(environments)
-      @logger.info "Saving report to #{@options[:report]}"
-      @jobs = []
-      @info[:duration] = distance_of_time_in_hours_and_minutes(@info[:date] - 30, Time.now)
-
-      environments.each_with_index do |env, num|
-        output_dir = "#{@work_dir}/output-#{num}"
-        job = {
-          :id     => num + 1,
-          :name   => "##{num + 1}",
-          :passed => File.read("#{output_dir}/runner.status") == "0\n",
-          :duration => "TODO",
-          :finished => "TODO",
-          :env    => inspect_env(env)
-        }
-
-        log = File.open("#{output_dir}/runner.log", "rb") { |f| f.read }
-        html_log = StringIO.new
-        ANSI2HTML::Main.new(log, html_log)
-        job[:html_log] = html_log.string
-
-        @jobs << job
-      end
-
-      @info[:passed] = @jobs.all? { |job| job[:passed] }
-      @info[:state]  = @info[:passed] ? "Passed" : "Failed"
-      @info[:finished] = "TODO"
-      @info[:logo]   = File.open("#{ROOT}/src/logo.png", "rb") { |f| f.read }
-
-      template = ERB.new(File.read("#{ROOT}/src/report.html.erb"))
-      report = template.result(binding)
-      File.open(@options[:report], "w") do |f|
-        f.write(report)
+      if $?.exitstatus != 0
+        abort "Cannot extract test output"
       end
     end
 
-    def send_report_notification(environments)
-      if @options[:email]
-        # TODO
+    def save_result
+      filename = "#{@plan_path}/result.yml"
+      @logger.info "Saving result to #{filename}"
+      File.open(filename, "w") do |io|
+        YAML.dump(@run_result, io)
       end
-    end
-
-    def send_error_notification(e)
-      if @options[:email]
-        # TODO
-      end
+      unset_plan_processing!
     end
 
     def log_error(e)
@@ -357,6 +187,7 @@ module ApachaiHopachai
         @logger.error("ERROR: #{e.message} (#{e.class}):\n    " +
           e.backtrace.join("\n    "))
       end
+
       if e.is_a?(Exited)
         e.exit_status
       else

@@ -1,9 +1,6 @@
 #!/usr/bin/env ruby
 require 'logger'
-require 'base64'
-
-REPO_URL = ARGV[0]
-CONFIG   = Marshal.load(Base64.decode64(ARGV[1]))
+require 'yaml'
 
 def sh(command, *args)
 	puts "$ #{command} #{args.join(' ')}"
@@ -33,9 +30,10 @@ end
 
 def start
 	ENV['TERM'] = 'xterm-256color'
+	config = YAML.load_file('travis.yml')
 	Dir.chdir("app")
-	run_command_list(CONFIG['before_install'])
-	run_script(CONFIG)
+	run_command_list(config['before_install'])
+	run_script(config)
 	log "Apachai Hopachai finished."
 end
 

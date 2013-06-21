@@ -1,9 +1,12 @@
+require 'apachai-hopachai/command_utils'
 require 'optparse'
 require 'socket'
 require 'base64'
 
 module ApachaiHopachai
   class ScriptCommand < Command
+    include CommandUtils
+    
     def self.description
       "Run a script inside a container"
     end
@@ -32,12 +35,7 @@ module ApachaiHopachai
           close_connection
         end
       rescue StandardError, SignalException => e
-        exit_status = log_error(e)
-        if e.is_a?(ThreadInterrupted)
-          raise e
-        else
-          exit(exit_status)
-        end
+        exit(log_error(e))
       ensure
         maybe_destroy_container
       end
