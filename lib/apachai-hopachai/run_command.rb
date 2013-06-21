@@ -21,6 +21,8 @@ module ApachaiHopachai
     def start
       require_libs
       parse_argv
+      initialize_log_file
+      maybe_daemonize
       create_work_dir
       begin
         clone_repo
@@ -28,7 +30,10 @@ module ApachaiHopachai
         environments = infer_test_environments
         run_in_environments(environments)
         save_reports(environments)
-        send_notifications(environments)
+        send_report_notification(environments)
+      rescue => e
+        send_error_notification(e)
+        raise e
       ensure
         destroy_work_dir
       end
@@ -50,7 +55,7 @@ module ApachaiHopachai
       require 'optparse'
       OptionParser.new do |opts|
         nl = "\n#{' ' * 37}"
-        opts.banner = "Usage: appa run [OPTIONS] GIT_URL"
+        opts.banner = "Usage: appa run [OPTIONS] GIT_URL [COMMIT]"
         opts.separator ""
         
         opts.separator "Options:"
@@ -62,6 +67,15 @@ module ApachaiHopachai
         end
         opts.on("--limit N", Integer, "Limit the number of environments to test. Default: test all environments") do |val|
           @options[:limit] = val
+        end
+        opts.on("--email EMAIL", "-e", String, "Send email when done") do |val|
+          @options[:email] = val
+        end
+        opts.on("--daemonize", "-d", "Daemonize into background") do
+          @options[:daemonize] = true
+        end
+        opts.on("--log-file FILENAME", "-l", String, "Log to the given file") do |val|
+          @options[:log_file] = val
         end
         opts.on("--log-level LEVEL", String, "Set log level. One of: fatal,error,warn,info,debug") do |val|
           set_log_level(val)
@@ -86,12 +100,42 @@ module ApachaiHopachai
         RunCommand.help
         exit 0
       end
-      if @argv.size != 1
+      if @argv.size < 1 || @argv.size > 2
         RunCommand.help
         exit 1
       end
+      if @options[:daemonize] && !@options[:log_file]
+        abort "If you set --daemonize then you must also set --log-file."
+      end
 
       @options[:repository] = @argv[0]
+      @options[:commit] = @argv[1]
+    end
+
+    def initialize_log_file
+      if @options[:log_file]
+        file = File.open(@options[:log_file], "a")
+        STDOUT.reopen(file)
+        STDERR.reopen(file)
+        STDOUT.sync = STDERR.sync = file.sync = true
+      end
+    end
+
+    def maybe_daemonize
+      if @options[:daemonize]
+        @logger.info("Daemonization requested.")
+        pid = fork
+        if pid
+          # Parent
+          exit!(0)
+        else
+          # Child
+          trap "HUP", "IGNORE"
+          STDIN.reopen("/dev/null", "r")
+          Process.setsid
+          @logger.info("Daemonized into background: PID #{$$}")
+        end
+      end
     end
 
     def create_work_dir
@@ -105,10 +149,24 @@ module ApachaiHopachai
     end
 
     def clone_repo
-      @logger.info "Cloning from #{@options[:repository]}"
-      single_branch = "--single-branch" if `git clone --help` =~ /--single-branch/
-      if !system("git clone --depth 1 #{single_branch} #{@options[:repository]} '#{@work_dir}/input/app'")
+      if @options[:commit]
+        @logger.info "Cloning from #{@options[:repository]}, commit #{@options[:commit]}"
+      else
+        @logger.info "Cloning from #{@options[:repository]}"
+      end
+
+      args = []
+      if !@options[:commit]
+        args << "--single-branch" if `git clone --help` =~ /--single-branch/
+        args << "--depth 1"
+      end
+
+      if !system("git clone #{args.join(' ')} #{@options[:repository]} '#{@work_dir}/input/app'")
         abort "git clone failed"
+      end
+
+      if @options[:commit]
+        system("git", "checkout", "-q", @options[:commit], :chdir => "#{@work_dir}/input/app")
       end
     end
 
@@ -249,7 +307,16 @@ module ApachaiHopachai
       end
     end
 
-    def send_notifications(environments)
+    def send_report_notification(environments)
+      if @options[:email]
+        # TODO
+      end
+    end
+
+    def send_error_notification(e)
+      if @options[:email]
+        # TODO
+      end
     end
 
     def h(text)
