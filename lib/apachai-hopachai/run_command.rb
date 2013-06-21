@@ -128,7 +128,7 @@ module ApachaiHopachai
     end
 
     def run_plan
-      @logger.info "# Running plan with environment: #{@plan_info[:env_name]}"
+      @logger.info "Running plan with environment: #{@plan_info['env_name']}"
       set_plan_processing!
 
       @run_result = { 'start_time' => Time.now }
