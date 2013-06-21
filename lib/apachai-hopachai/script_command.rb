@@ -32,8 +32,7 @@ module ApachaiHopachai
           close_connection
         end
       rescue StandardError, SignalException => e
-        report_error(e)
-        exit 1
+        log_error(e)
       ensure
         maybe_destroy_container
       end
@@ -238,15 +237,20 @@ module ApachaiHopachai
       @status_socket.close
     end
 
-    def report_error(e)
-      # If the exception is an Exited then its message has already been logged.
-      if !e.is_a?(Exited)
+    def log_error(e)
+      if !e.is_a?(Exited) || !e.logged?
         @logger.error("ERROR: #{e.message} (#{e.class}):\n    " +
-            e.backtrace.join("\n    "))
+          e.backtrace.join("\n    "))
       end
 
       system("docker logs #{@container} > appa-#{@container}.log")
       @logger.error("Docker logs saved to appa-#{@container}.log")
+
+      if e.is_a?(Exited)
+        e.exit_status
+      else
+        1
+      end
     end
 
     def write_string(socket, str)

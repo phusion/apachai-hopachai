@@ -2,11 +2,13 @@ require 'logger'
 
 module ApachaiHopachai
   class Exited < StandardError
-    attr_reader :exit_status
+    attr_reader :exit_status, :logged
+    alias logged? logged
 
-    def initialize(exit_status, message = nil)
+    def initialize(exit_status, message = nil, logged = false)
       super(message || self.class.to_s)
       @exit_status = exit_status
+      @logged = logged
     end
   end
 
@@ -53,13 +55,18 @@ module ApachaiHopachai
 
     private
 
-    def abort(message = nil)
-      @logger.fatal(message) if message
-      exit(1, message)
+    def exit(code = 0)
+      raise Exited.new(code)
     end
 
-    def exit(code = 0, message = nil)
-      raise Exited.new(code, message)
+    def abort(message = nil)
+      if message
+        @logger.fatal(message)
+        e = Exited.new(1, message, true)
+      else
+        e = Exited.new(1, message, false)
+      end
+      raise e
     end
 
     def set_log_level(name)

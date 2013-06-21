@@ -14,7 +14,7 @@ module ApachaiHopachai
       super(*args)
       @options = {
         :jobs   => 1,
-        :report => "appa-report-#{Time.now.strftime("%Y-%m-%d %H:%M:%S")}.html"
+        :report => "appa-report-#{Time.now.strftime("%Y-%m-%d-%H:%M:%S")}.html"
       }
     end
 
@@ -31,9 +31,9 @@ module ApachaiHopachai
         run_in_environments(environments)
         save_reports(environments)
         send_report_notification(environments)
-      rescue => e
+      rescue StandardError, SignalException => e
         send_error_notification(e)
-        raise e
+        log_error(e)
       ensure
         destroy_work_dir
       end
@@ -46,7 +46,9 @@ module ApachaiHopachai
       require 'tmpdir'
       require 'safe_yaml'
       require 'semaphore'
+      require 'ansi2html/main'
       require 'base64'
+      require 'stringio'
       require 'thwait'
       require 'erb'
     end
@@ -198,7 +200,7 @@ module ApachaiHopachai
 
       if @options[:limit]
         @logger.info "Limiting to #{@options[:limit]} environments"
-        environments = environments[0 .. @options[:limit] - 1]
+        environments = environments.slice(0, @options[:limit])
       end
 
       environments
@@ -284,15 +286,21 @@ module ApachaiHopachai
 
       environments.each_with_index do |env, num|
         output_dir = "#{@work_dir}/output-#{num}"
-        @jobs << {
+        job = {
           :id     => num + 1,
           :name   => "##{num + 1}",
           :passed => File.read("#{output_dir}/runner.status") == "0\n",
           :duration => "TODO",
           :finished => "TODO",
-          :env    => inspect_env(env),
-          :log    => File.open("#{output_dir}/runner.log", "rb") { |f| f.read }
+          :env    => inspect_env(env)
         }
+
+        log = File.open("#{output_dir}/runner.log", "rb") { |f| f.read }
+        html_log = StringIO.new
+        ANSI2HTML::Main.new(log, html_log)
+        job[:html_log] = html_log.string
+
+        @jobs << job
       end
 
       @info[:passed] = @jobs.all? { |job| job[:passed] }
@@ -316,6 +324,18 @@ module ApachaiHopachai
     def send_error_notification(e)
       if @options[:email]
         # TODO
+      end
+    end
+
+    def log_error(e)
+      if !e.is_a?(Exited) || !e.logged?
+        @logger.error("ERROR: #{e.message} (#{e.class}):\n    " +
+          e.backtrace.join("\n    "))
+      end
+      if e.is_a?(Exited)
+        e.exit_status
+      else
+        1
       end
     end
 

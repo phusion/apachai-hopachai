@@ -55,6 +55,38 @@
         display: inline-block;
         vertical-align: top;
       }
+
+      /** ANSI colors **/
+      .bold {
+        font-weight: bold;
+      }
+      .black {
+        color: black;
+      }
+      .red {
+        color: red;
+      }
+      .green {
+        color: green;
+      }
+      .yellow {
+        color: yellow;
+      }
+      .blue {
+        color: blue;
+      }
+      .magenta {
+        color: magenta;
+      }
+      .cyan {
+        color: cyan;
+      }
+      .white {
+        color: white;
+      }
+      .grey {
+        color: gray;
+      }
     </style>
   </head>
   <body>
@@ -136,7 +168,7 @@
             <span class="job-label label label-important">Failed</span>
           <% end %>
         </h2>
-        <div class="job-log"><%= job[:log] %></div>
+        <div class="job-log"><%= job[:html_log] %></div>
       <% end %>
     </div>
   </body>

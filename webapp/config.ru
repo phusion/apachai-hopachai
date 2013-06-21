@@ -17,7 +17,7 @@ end
 
 app = lambda do |env|
   input      = JSON.parse(env['rack.input'].read)
-  time_str   = Time.now.strftime("%Y-%m-%d %H:%M:%S")
+  time_str   = Time.now.strftime("%Y-%m-%d-%H:%M:%S")
   output_dir = CONFIG['report_dir'] + "/" + slug(input['repository']['name'])
   report     = "#{output_dir}/#{time_str}.html"
   log        = "#{output_dir}/#{time_str}.log"
