@@ -75,7 +75,13 @@
         </tr>
         <tr>
           <td class="summary-header">State</td>
-          <td class="summary-value"><%=h @info[:state] %></td>
+          <td class="summary-value">
+            <% if @info[:passed] %>
+              <span class="job-label label label-success">Passed</span>
+            <% else %>
+              <span class="job-label label label-important">Failed</span>
+            <% end %>
+          </td>
 
           <td class="summary-header summary-2nd-column">Author</td>
           <td class="summary-value"><%=h @info[:author] %></td>
