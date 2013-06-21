@@ -33,7 +33,7 @@ module ApachaiHopachai
         send_report_notification(environments)
       rescue StandardError, SignalException => e
         send_error_notification(e)
-        log_error(e)
+        exit(log_error(e))
       ensure
         destroy_work_dir
       end
@@ -253,7 +253,14 @@ module ApachaiHopachai
           end
         end
       end
-      ThreadsWait.all_waits(*threads)
+      begin
+        ThreadsWait.all_waits(*threads)
+      rescue Exception => e
+        @logger.warn "Exception #{e} (#{e.class}) raised, aborting jobs"
+        threads.each { |t| t.raise(ThreadInterrupted, "Main thread aborted this job") }
+        ThreadsWait.all_waits(*threads)
+        raise
+      end
     end
 
     def run_in_environment(env, num)
@@ -275,8 +282,24 @@ module ApachaiHopachai
       ])
       script_command.run
 
-      system("tar xzf output.tar.gz", :chdir => output_dir)
-      File.unlink("#{output_dir}/output.tar.gz")
+      begin
+        pid = Process.spawn("tar", "xzvf", "output.tar.gz",
+          :chdir => output_dir)
+        begin
+          Process.waitpid(pid)
+          exit($?.exitstatus)
+        rescue ThreadInterrupted
+          Process.kill('TERM', pid)
+          Process.waitpid(pid) rescue nil
+          raise
+        end
+      ensure
+        File.unlink("#{output_dir}/output.tar.gz") rescue nil
+      end
+    rescue ThreadInterrupted
+      1
+    rescue Exited => e
+      e.exit_status
     end
 
     def save_reports(environments)
@@ -328,7 +351,9 @@ module ApachaiHopachai
     end
 
     def log_error(e)
-      if !e.is_a?(Exited) || !e.logged?
+      if e.is_a?(SignalException)
+        @logger.error "Interrupted by signal #{e.signo}"
+      elsif !e.is_a?(Exited) || !e.logged?
         @logger.error("ERROR: #{e.message} (#{e.class}):\n    " +
           e.backtrace.join("\n    "))
       end

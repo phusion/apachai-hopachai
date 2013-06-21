@@ -32,7 +32,12 @@ module ApachaiHopachai
           close_connection
         end
       rescue StandardError, SignalException => e
-        log_error(e)
+        exit_status = log_error(e)
+        if e.is_a?(ThreadInterrupted)
+          raise e
+        else
+          exit(exit_status)
+        end
       ensure
         maybe_destroy_container
       end
@@ -238,7 +243,9 @@ module ApachaiHopachai
     end
 
     def log_error(e)
-      if !e.is_a?(Exited) || !e.logged?
+      if e.is_a?(SignalException)
+        @logger.error "Interrupted by signal #{e.signo}"
+      elsif !e.is_a?(Exited) || !e.logged?
         @logger.error("ERROR: #{e.message} (#{e.class}):\n    " +
           e.backtrace.join("\n    "))
       end

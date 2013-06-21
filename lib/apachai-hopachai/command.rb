@@ -12,6 +12,9 @@ module ApachaiHopachai
     end
   end
 
+  class ThreadInterrupted < StandardError
+  end
+
   ROOT = File.expand_path(File.dirname(__FILE__) + "/../..")
 
   COMMANDS = {
