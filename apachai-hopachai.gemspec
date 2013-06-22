@@ -14,6 +14,6 @@ Gem::Specification.new do |s|
   s.authors = ["Hongli Lai"]
   s.files = Dir[*APACHAI_HOPACHAI_FILES]
   s.add_dependency("safe_yaml")
-  s.add_dependency("semaphore")
   s.add_dependency("ansi2html")
+  s.add_dependency("mail")
 end

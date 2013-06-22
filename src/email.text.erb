@@ -1,0 +1,15 @@
+Build Update for <%= @jobset_info['repo_name'] %>
+---------------------------------------
+
+Status: <%= passed? ? 'Passed' : 'Failed' %>
+
+Duration: <%= duration %>
+Commit: <%= @jobset_info['commit'] %>
+Author: <%= @jobset_info['author'] %>
+Message: <%= @jobset_info['subject'] %>
+
+Report has been attached.
+
+------------------
+
+CI report brought to you by Apachai Hopachai.

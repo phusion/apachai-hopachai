@@ -33,6 +33,7 @@ module ApachaiHopachai
     def require_libs
       require 'safe_yaml'
       require 'ansi2html/main'
+      require 'mail'
       require 'erb'
       require 'base64'
       require 'stringio'
@@ -124,25 +125,31 @@ module ApachaiHopachai
       end
 
       template = ERB.new(File.read("#{ROOT}/src/report.html.erb"))
-      report   = template.result(binding)
+      @report  = template.result(binding)
       filename = @options[:report] || "#{@jobset_path}/report.html"
       @logger.info "Saving report to #{filename}"
       File.open(filename, "w") do |f|
-        f.write(report)
+        f.write(@report)
       end
     end
 
     def send_notification
       if @options[:email]
+        @logger.info "Sending notification to #{@options[:email]}"
         info = symbolize_keys(@jobset_info).merge(:status => passed? ? 'Passed' : 'Failed')
-        p info
         subject = @options[:email_subject] % info
-        IO.popen("cat", "w") do |f|
-          f.puts "From: #{@options[:email_from]}"
-          f.puts "To: #{@options[:email]}"
-          f.puts "Subject: #{subject}"
-          f.puts
-        end
+
+        template = ERB.new(File.read("#{ROOT}/src/email.text.erb"))
+        text_body = template.result(binding)
+
+        mail = Mail.new
+        mail[:from] = @options[:email_from]
+        mail[:to]   = @options[:email]
+        mail[:subject] = subject
+        mail[:body] = text_body
+        mail.add_file :filename => 'report.html', :content => @report
+        mail.delivery_method :sendmail
+        mail.deliver
       end
     end
 
