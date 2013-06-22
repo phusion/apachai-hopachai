@@ -54,9 +54,6 @@ module ApachaiHopachai
         opts.on("--output-dir DIR", "-o", String, "Store prepared jobs in this directory") do |val|
           @options[:output_dir] = val
         end
-        opts.on("--save-paths FILENAME", String, "Store path names of prepared jobs into this file") do |val|
-          @options[:save_paths] = val
-        end
         opts.on("--limit N", Integer, "Limit the number of environments to prepare. Default: prepare all environments") do |val|
           @options[:limit] = val
         end
@@ -207,30 +204,16 @@ module ApachaiHopachai
     end
 
     def create_jobs(environments)
-      if @options[:save_paths]
-        save_file = File.open(@options[:save_paths], "w")
+      @logger.info "Creating jobset: #{jobset_path}"
+      Dir.mkdir(jobset_path)
+
+      environments.each_with_index do |env, i|
+        create_job(env, i)
       end
 
-      begin
-        @logger.info "Creating jobset: #{jobset_path}"
-        Dir.mkdir(jobset_path)
-
-        environments.each_with_index do |env, i|
-          path = create_job(env, i)
-          if save_file
-            save_file.puts(path)
-            save_file.flush
-          end
-        end
-
-        @logger.info "Committing jobset #{jobset_path}"
-        File.open("#{jobset_path}/info.yml", "w") do |io|
-          YAML.dump(jobset_info, io)
-        end
-      ensure
-        if @options[:save_paths]
-          save_file.close
-        end
+      @logger.info "Committing jobset #{jobset_path}"
+      File.open("#{jobset_path}/info.yml", "w") do |io|
+        YAML.dump(jobset_info, io)
       end
     end
 
