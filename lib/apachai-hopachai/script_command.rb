@@ -1,7 +1,4 @@
 require 'apachai-hopachai/command_utils'
-require 'optparse'
-require 'socket'
-require 'base64'
 
 module ApachaiHopachai
   class ScriptCommand < Command
@@ -13,6 +10,12 @@ module ApachaiHopachai
 
     def self.help
       puts new([]).send(:option_parser)
+    end
+
+    def self.require_libs
+      require 'optparse'
+      require 'socket'
+      require 'base64'
     end
 
     def start

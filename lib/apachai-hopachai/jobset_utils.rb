@@ -29,6 +29,10 @@ module ApachaiHopachai
         version == '1.0'
       end
 
+      def processing?
+        jobs.any? { |job| job.processing? }
+      end
+
       # Returns whether a jobset directory is done being
       # processed by 'run'.
       def processed?

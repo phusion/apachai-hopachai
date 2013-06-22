@@ -12,6 +12,15 @@ module ApachaiHopachai
       puts new([]).send(:option_parser)
     end
 
+    def self.require_libs
+      require 'safe_yaml'
+      require 'ansi2html/main'
+      require 'mail'
+      require 'erb'
+      require 'base64'
+      require 'stringio'
+    end
+
     def initialize(*args)
       super(*args)
       @options = {
@@ -21,7 +30,6 @@ module ApachaiHopachai
     end
 
     def start
-      require_libs
       parse_argv
       read_and_verify_jobset
       save_report
@@ -29,15 +37,6 @@ module ApachaiHopachai
     end
 
     private
-
-    def require_libs
-      require 'safe_yaml'
-      require 'ansi2html/main'
-      require 'mail'
-      require 'erb'
-      require 'base64'
-      require 'stringio'
-    end
 
     def option_parser
       require 'optparse'

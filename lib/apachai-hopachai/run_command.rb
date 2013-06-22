@@ -14,8 +14,14 @@ module ApachaiHopachai
       puts new([]).send(:option_parser)
     end
 
+    def self.require_libs
+      require 'apachai-hopachai/script_command'
+      require 'tmpdir'
+      require 'safe_yaml'
+      ScriptCommand.require_libs
+    end
+
     def start
-      require_libs
       parse_argv
       maybe_set_log_file
       maybe_daemonize
@@ -38,12 +44,6 @@ module ApachaiHopachai
     end
 
     private
-
-    def require_libs
-      require 'apachai-hopachai/script_command'
-      require 'tmpdir'
-      require 'safe_yaml'
-    end
 
     def option_parser
       require 'optparse'

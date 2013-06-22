@@ -29,6 +29,7 @@ module ApachaiHopachai
         extract_repo_info
         environments = infer_test_environments
         create_jobs(environments)
+        notify_jobset_changed
       ensure
         destroy_work_dir
       end
@@ -243,6 +244,12 @@ module ApachaiHopachai
       end
 
       path
+    end
+
+    def notify_jobset_changed
+      now = Time.now
+      File.utime(now, now, jobset_path)
+      File.utime(now, now, jobset_path + "/..")
     end
 
     def job_path(env, i)

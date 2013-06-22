@@ -1,7 +1,9 @@
+require 'apachai-hopachai/command_utils'
 require 'apachai-hopachai/jobset_utils'
 
 module ApachaiHopachai
   class DaemonCommand < Command
+    include CommandUtils
     include JobsetUtils
 
     def self.description
@@ -15,8 +17,11 @@ module ApachaiHopachai
     def self.require_libs
       JobsetUtils.require_libs
       require 'apachai-hopachai/run_command'
-      require 'tmpdir'
+      require 'apachai-hopachai/finalize_command'
       require 'safe_yaml'
+      require 'fileutils'
+      RunCommand.require_libs
+      FinalizeCommand.require_libs
     end
 
     def start
@@ -25,13 +30,22 @@ module ApachaiHopachai
       maybe_daemonize
       begin_watching_queue_dir
       begin
-        while true
-          process_eligible_jobsets
-          wait_for_queue_dir_change
+        trap_signals
+        begin
+          @done = false
+          while !@done
+            while !@done && process_eligible_jobsets > 0
+              # Loop until there are no eligile jobsets.
+            end
+            @done ||= wait_for_queue_dir_change
+          end
+        ensure
+          untrap_signals
         end
       ensure
         end_watching_queue_dir
       end
+      @logger.info "Apachai Hopachai daemon exited"
     end
 
     private
@@ -87,12 +101,15 @@ module ApachaiHopachai
 
     def begin_watching_queue_dir
       @watch = {}
+      @watch[:terminator] = IO.pipe
+
       a, b = IO.pipe
       begin
-        @watch[:pid] = Process.spawn("inotifywait", "-e", "attrib,move,create,delete", "--", @queue_path,
+        @watch[:pid] = Process.spawn("inotifywait", "-m",
+          "-e", "attrib,move,create,delete", "--", @queue_path,
           :in  => ['/dev/null', 'r'],
           :out => b,
-          :err => :out,
+          :err => b,
           :close_others => true)
       rescue Exception
         a.close
@@ -100,39 +117,82 @@ module ApachaiHopachai
       ensure
         b.close
       end
+
       @watch[:io] = a
       read_until_blocks(@watch[:io])
     end
 
     def end_watching_queue_dir
+      @watch[:io].close
       Process.kill('TERM', @watch[:pid]) rescue nil
       Process.waitpid(@watch[:pid]) rescue nil
-      @watch[:io].close
+      @watch[:terminator].each do |io|
+        io.close if !io.closed?
+      end
+    end
+
+    def trap_signals
+      times = 0
+
+      block = lambda do |*args|
+        begin
+          times += 1
+          if times < 3
+            STDERR.puts "Gracefully exiting (send signal #{3 - times} more times to force termination)..."
+            @done = true
+            begin
+              @watch[:terminator][1].write_nonblock('x')
+            rescue Errno::EAGAIN, Errno::EWOULDBLOCK, Errno::EINTR
+            end
+          else
+            STDERR.puts "Aborting!"
+            exit!(1)
+          end
+        rescue Exception => e
+          STDERR.puts "*** Exception in signal handler! #{e} (#{e.class})\n" +
+            e.backtrace.join("\n")
+          exit!(1)
+        end
+      end
+
+      trap("TERM", &block)
+      trap("INT", &block)
+    end
+
+    def untrap_signals
+      trap("TERM", 'DEFAULT')
+      trap("TERM", 'DEFAULT')
     end
 
     def wait_for_queue_dir_change
       @logger.debug "Watching for relevant filesystem changes"
-      select([@watch[:io]])
-      @logger.debug "Filesystem changed!"
-      read_until_blocks(@watch[:io])
+      ios = select([@watch[:io], @watch[:terminator][0]])
+      if ios.include?(@watch[:terminator][0])
+        @logger.debug "Termination signal received, breaking out of main loop"
+        true
+      else
+        @logger.debug "Filesystem changed!"
+        read_until_blocks(@watch[:io])
+        false
+      end
     end
 
     def process_eligible_jobsets
       jobsets = []
       i = 0
 
-      list_jobsets(@queue_path).each |jobset|
+      list_jobsets(@queue_path).each do |jobset|
         @logger.debug "Candidate: #{jobset.path}"
-        if js.complete?
+        if jobset.complete?
           @logger.debug "  -> Jobset is complete"
-          if js.version_supported?
-            if js.processed?
-              @logger.debug "  -> Jobset is processed"
+          if jobset.version_supported?
+            if jobset.processing?
+              @logger.debug "  -> Jobset is already being processed"
+              @logger.debug "  -> Dropped"
+            else
+              @logger.debug "  -> Jobset is not being processed"
               @logger.debug "  -> Accepted"
               jobsets << jobset
-            else
-              @logger.debug "  -> Jobset not processed"
-              @logger.debug "  -> Dropped"
             end
           else
             @logger.debug "  -> Jobset version #{jobset.version} not supported"
@@ -144,15 +204,47 @@ module ApachaiHopachai
         end
         i += 1
       end
-      @logger.debug "Found #{i} candidates, #{jobsets.size} were eligible for processing"
+      @logger.debug "Found #{i} candidates, #{jobsets.size} are eligible for processing"
 
       jobsets.each do |jobset|
-        process_jobset(jobset)
+        if jobset.processed?
+          delete_jobset(jobset)
+        else
+          process_jobset(jobset)
+        end
       end
+
+      jobsets.size
+    end
+
+    def delete_jobset(jobset)
+      @logger.info "Deleting jobset #{jobset.path}"
+      FileUtils.remove_entry_secure(jobset.path)
     end
 
     def process_jobset(jobset)
-      @logger.info "Processing jobset #{jobset.path}"
+      @logger.info "Processing jobset #{jobset.path} with #{jobset.jobs.size} jobs"
+
+      jobset.jobs.each do |job|
+        @logger.info "Processing job #{job.path}: #{job.info['env_name']}"
+        command = RunCommand.new([
+          "--dry-run-test",
+          "--",
+          job.path
+        ])
+        command.start
+      end
+
+      @logger.info "Finalizing jobset #{jobset.path}"
+      command = FinalizeCommand.new([
+        "--email=hongli@phusion.nl",
+        "--email-from=hongli@phusion.nl",
+        "--",
+        jobset.path
+      ])
+      command.start
+
+      delete_jobset(jobset)
     end
 
     def read_until_blocks(io)
@@ -161,6 +253,8 @@ module ApachaiHopachai
           io.read_nonblock(1024)
         rescue Errno::EAGAIN, Errno::EWOULDBLOCK, Errno::EINTR
           break
+        rescue EOFError
+          abort "inotifywatch aborted unexpectedly!"
         end
       end
     end
