@@ -28,6 +28,7 @@ module ApachaiHopachai
       parse_argv
       maybe_set_log_file
       maybe_daemonize
+      @logger.info "Apachai Hopachai daemon started"
       begin_watching_queue_dir
       begin
         trap_signals
@@ -105,7 +106,7 @@ module ApachaiHopachai
 
       a, b = IO.pipe
       begin
-        @watch[:pid] = Process.spawn("inotifywait", "-m",
+        @watch[:pid] = Process.spawn("setsid", "inotifywait", "-m",
           "-e", "attrib,move,create,delete", "--", @queue_path,
           :in  => ['/dev/null', 'r'],
           :out => b,
@@ -167,7 +168,7 @@ module ApachaiHopachai
     def wait_for_queue_dir_change
       @logger.debug "Watching for relevant filesystem changes"
       ios = select([@watch[:io], @watch[:terminator][0]])
-      if ios.include?(@watch[:terminator][0])
+      if ios[0].include?(@watch[:terminator][0])
         @logger.debug "Termination signal received, breaking out of main loop"
         true
       else
