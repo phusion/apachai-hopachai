@@ -128,15 +128,29 @@ module ApachaiHopachai
     end
 
     def wait_for_connection
-      sleep 0.5
+      sleep 0.1
       @logger.debug("Querying host port for Docker container port 3002")
       @main_port = `docker port #{@container} 3002`.to_i
       abort "Cannot query host port for Docker container port 3002" if @main_port == 0
       @logger.debug("Host port for Docker container port 3002 is #{@main_port}")
       @logger.info("Connecting to container")
-      @main_socket = TCPSocket.new('127.0.0.1', @main_port)
-      @main_socket.sync = true
-      @main_socket.binmode
+
+      while true
+        sleep 0.1
+        @main_socket = TCPSocket.new('127.0.0.1', @main_port)
+        @main_socket.sync = true
+        @main_socket.binmode
+        begin
+          handshake = @main_socket.readline
+        rescue EOFError
+          handshake = nil
+        end
+        if handshake == "You have control\n"
+          break
+        else
+          @main_socket.close
+        end
+      end
     end
 
     def close_connection

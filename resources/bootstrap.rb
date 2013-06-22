@@ -39,6 +39,7 @@ class Bootstrap
     @logger.info "Connection accepted"
     @client.sync = true
     @client.binmode
+    @client.puts "You have control"
   end
 
   def receive_input

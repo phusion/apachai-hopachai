@@ -4,5 +4,5 @@ APACHAI_HOPACHAI_FILES = [
   "lib/**/*",
   "resources/**/*",
   "webapp/**/.gitignore",
-  "webapp/config.ru"
+  "webapp/*"
 ]
