@@ -20,8 +20,14 @@ module ApachaiHopachai
       require 'apachai-hopachai/finalize_command'
       require 'safe_yaml'
       require 'fileutils'
+      require 'optparse'
       RunCommand.require_libs
       FinalizeCommand.require_libs
+    end
+
+    def initialize(*args)
+      super(*args)
+      @last_report_number = 0
     end
 
     def start
@@ -52,13 +58,30 @@ module ApachaiHopachai
     private
 
     def option_parser
-      require 'optparse'
+      require 'apachai-hopachai/finalize_command'
+      @options = {}
+      @finalize_options = FinalizeCommand.default_options.dup
       OptionParser.new do |opts|
         nl = "\n#{' ' * 37}"
         opts.banner = "Usage: appa daemon [OPTIONS] QUEUE_PATH"
         opts.separator ""
         
         opts.separator "Options:"
+        opts.on("--report-dir DIR", String, "Save reports to this directory instead of into the jobsets") do |val|
+          @options[:report_dir] = val
+        end
+        opts.on("--email EMAIL", String, "Notify the given email address") do |val|
+          @finalize_options[:email] = val
+        end
+        opts.on("--email-from EMAIL", String, "The From address for email notofications. Default: #{@finalize_options[:email_from]}") do |val|
+          @finalize_options[:email_from] = val
+        end
+        opts.on("--email-subject STRING", String, "The subject for email notofications. Default: #{@finalize_options[:email_subject]}") do |val|
+          @finalize_options[:email_subject] = val
+        end
+        opts.on("--dry-run-test", "Do everything except running the actual tests") do |val|
+          @options[:dry_run_test] = true
+        end
         opts.on("--daemonize", "-d", "Daemonize into background") do
           @options[:daemonize] = true
         end
@@ -75,7 +98,6 @@ module ApachaiHopachai
     end
 
     def parse_argv
-      @options = {}
       begin
         option_parser.parse!(@argv)
       rescue OptionParser::ParseError => e
@@ -229,25 +251,40 @@ module ApachaiHopachai
       jobset.jobs.each do |job|
         @logger.info "Processing job #{job.path}: #{job.info['env_name']}"
         command = RunCommand.new([
-          "--dry-run-test",
+          @options[:dry_run_test] ? "--dry-run-test" : nil,
           "--",
           job.path
-        ])
+        ].compact)
         command.logger = @logger
         command.start
       end
 
       @logger.info "Finalizing jobset #{jobset.path}"
-      command = FinalizeCommand.new([
-        "--email=hongli@phusion.nl",
-        "--email-from=hongli@phusion.nl",
-        "--",
-        jobset.path
-      ])
+      finalize_args = []
+      @finalize_options.each_pair do |key, val|
+        finalize_args << "--#{key.to_s.gsub(/_/, '-')}"
+        finalize_args << val
+      end
+      if @options[:report_dir]
+        finalize_args << "--report"
+        finalize_args << next_report_filename
+      end
+      command = FinalizeCommand.new([finalize_args, "--", jobset.path].flatten)
       command.logger = @logger
       command.start
 
       delete_jobset(jobset)
+    end
+
+    def next_report_filename
+      now = Time.now.strftime("%Y-%m-%d-%H:%M:%S")
+      if @last_report_time == now
+        @last_report_number += 1
+        "#{@options[:report_dir]}/appa-report-#{now}-#{@last_report_number}.html"
+      else
+        @last_report_number = 1
+        "#{@options[:report_dir]}/appa-report-#{now}-1.html"
+      end
     end
 
     def read_until_blocks(io)

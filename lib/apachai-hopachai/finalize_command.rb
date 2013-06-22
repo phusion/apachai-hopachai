@@ -21,12 +21,16 @@ module ApachaiHopachai
       require 'stringio'
     end
 
-    def initialize(*args)
-      super(*args)
-      @options = {
+    def self.default_options
+      @@default_options ||= {
         :email_from => "Apachai Hopachai CI <#{`whoami`.strip}@localhost>",
         :email_subject => "[%{status}] %{repo_name} (%{before_commit} - %{commit})"
-      }
+      }.freeze
+    end
+
+    def initialize(*args)
+      super(*args)
+      @options = self.class.default_options.dup
     end
 
     def start

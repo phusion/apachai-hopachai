@@ -37,6 +37,7 @@ module ApachaiHopachai
     def show_help_for_command(command_name)
       klass = ApachaiHopachai.get_class_for_command(command_name)
       if klass
+        require 'optparse'
         klass.help
       else
         STDERR.puts "Command #{command_name} not recognized. Please run 'appa help' for an overview of commands."
