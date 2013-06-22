@@ -38,6 +38,7 @@ module ApachaiHopachai
 
   class Command
     attr_reader :exit_status
+    attr_accessor :logger
 
     def self.description
       nil

@@ -140,10 +140,10 @@ module ApachaiHopachai
       script_command = ScriptCommand.new([
         "--script=#{@job_path}",
         "--output=#{@work_dir}/output.tar.gz",
-        "--log-level=#{@logger.level}",
         "--",
         @options[:dry_run_test] ? "--dry-run" : nil
       ].compact)
+      script_command.logger = @logger
       # Let any exceptions propagate so that bugs in Apachai Hopachai trigger
       # a stack trace. If the test inside the container fails, no exception
       # will be thrown. Instead we'll find a non-zero status in the status file.

@@ -233,6 +233,7 @@ module ApachaiHopachai
           "--",
           job.path
         ])
+        command.logger = @logger
         command.start
       end
 
@@ -243,6 +244,7 @@ module ApachaiHopachai
         "--",
         jobset.path
       ])
+      command.logger = @logger
       command.start
 
       delete_jobset(jobset)
