@@ -37,4 +37,9 @@ def start
 	log "Apachai Hopachai finished."
 end
 
-start
+if ARGV[0] == "--dry-run"
+	puts "--dry-run given, stopping."
+else
+	start
+end
+

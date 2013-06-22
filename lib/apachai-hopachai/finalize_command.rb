@@ -1,7 +1,7 @@
 module ApachaiHopachai
   class FinalizeCommand < Command
     def self.description
-      "Finalize a prepared test"
+      "Finalize test jobs"
     end
 
     def self.help
@@ -19,7 +19,7 @@ module ApachaiHopachai
     def start
       require_libs
       parse_argv
-      read_and_verify_planset
+      read_and_verify_jobset
       save_report
       send_notification
     end
@@ -37,11 +37,11 @@ module ApachaiHopachai
       require 'optparse'
       OptionParser.new do |opts|
         nl = "\n#{' ' * 37}"
-        opts.banner = "Usage: appa finalize [OPTIONS] PLANSET_PATH"
+        opts.banner = "Usage: appa finalize [OPTIONS] JOBSET_PATH"
         opts.separator ""
         
         opts.separator "Options:"
-        opts.on("--report FILENAME", String, "Save report to this file instead of into the planset") do |val|
+        opts.on("--report FILENAME", String, "Save report to this file instead of into the jobset") do |val|
           @options[:report] = val
         end
         opts.on("--email EMAIL", String, "Notify the given email address") do |val|
@@ -81,50 +81,51 @@ module ApachaiHopachai
         exit 1
       end
 
-      @planset_path = File.expand_path(@argv[0])
+      @jobset_path = File.expand_path(@argv[0])
     end
 
-    def read_and_verify_planset
-      abort "The given planset is not complete" if !File.exist?("#{@planset_path}/info.yml")
-      @planset_info = YAML.load_file("#{@planset_path}/info.yml", :safe => true)
-      if @planset_info['file_version'] != '1.0'
-        abort "Plan format version #{@planset_info['file_version']} is unsupported"
+    def read_and_verify_jobset
+      abort "The given jobset does not exist" if !File.exist?(@jobset_path)
+      abort "The given jobset is not complete" if !File.exist?("#{@jobset_path}/info.yml")
+      @jobset_info = YAML.load_file("#{@jobset_path}/info.yml", :safe => true)
+      if @jobset_info['file_version'] != '1.0'
+        abort "job format version #{@jobset_info['file_version']} is unsupported"
       end
       
-      @plans = []
-      Dir["#{@planset_path}/*.appa-plan"].each do |plan_path|
-        if plan_processed?(plan_path)
-          @plans << {
-            :path   => plan_path,
-            :info   => YAML.load_file("#{plan_path}/info.yml", :safe => true),
-            :result => YAML.load_file("#{plan_path}/result.yml", :safe => true)
+      @jobs = []
+      Dir["#{@jobset_path}/*.appa-job"].each do |job_path|
+        if job_processed?(job_path)
+          @jobs << {
+            :path   => job_path,
+            :info   => YAML.load_file("#{job_path}/info.yml", :safe => true),
+            :result => YAML.load_file("#{job_path}/result.yml", :safe => true)
           }
         else
-          abort "Plan #{plan_path} has not yet finished processing"
+          abort "job #{job_path} has not yet finished processing"
         end
       end
     end
 
-    def plan_processed?(plan_path)
-      File.exist?("#{plan_path}/result.yml")
+    def job_processed?(job_path)
+      File.exist?("#{job_path}/result.yml")
     end
 
     def save_report
-      @info = @planset_info.dup
+      @info = @jobset_info.dup
       @info[:logo] = File.open("#{ROOT}/src/logo.png", "rb") { |f| f.read }
-      @info[:passed] = @plans.all? { |plan| plan[:result]['passed'] }
+      @info[:passed] = @jobs.all? { |job| job[:result]['passed'] }
 
-      @plans.each do |plan|
-        log = File.open("#{plan[:path]}/output.log", "rb") { |f| f.read }
+      @jobs.each do |job|
+        log = File.open("#{job[:path]}/output.log", "rb") { |f| f.read }
         html_log = StringIO.new
         ANSI2HTML::Main.new(log, html_log)
-        plan[:html_log] = html_log.string
+        job[:html_log] = html_log.string
       end
-      @jobs = @plans
+      @jobs = @jobs
 
       template = ERB.new(File.read("#{ROOT}/src/report.html.erb"))
       report   = template.result(binding)
-      filename = @options[:report] || "#{@planset_path}/report.html"
+      filename = @options[:report] || "#{@jobset_path}/report.html"
       @logger.info "Saving report to #{filename}"
       File.open(filename, "w") do |f|
         f.write(report)
@@ -133,7 +134,7 @@ module ApachaiHopachai
 
     def send_notification
       if @options[:email]
-        subject = @options[:email_subject] % @planset_info
+        subject = @options[:email_subject] % @jobset_info
         IO.popen("sendmail -t", "w") do |f|
           f.puts "From: #{@options[:email_from]}"
           f.puts "To: #{@options[:email]}"

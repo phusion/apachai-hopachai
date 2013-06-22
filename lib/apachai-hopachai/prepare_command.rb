@@ -7,7 +7,7 @@ module ApachaiHopachai
     COMBINATORIC_KEYS = ['rvm', 'env'].freeze
 
     def self.description
-      "Prepare test runs"
+      "Prepare test jobs"
     end
 
     def self.help
@@ -28,7 +28,7 @@ module ApachaiHopachai
         clone_repo
         extract_repo_info
         environments = infer_test_environments
-        create_plans(environments)
+        create_jobs(environments)
       ensure
         destroy_work_dir
       end
@@ -51,10 +51,10 @@ module ApachaiHopachai
         opts.separator ""
         
         opts.separator "Options:"
-        opts.on("--output-dir DIR", "-o", String, "Store prepared plans in this directory") do |val|
+        opts.on("--output-dir DIR", "-o", String, "Store prepared jobs in this directory") do |val|
           @options[:output_dir] = val
         end
-        opts.on("--save-paths FILENAME", String, "Store path names of prepared plans into this file") do |val|
+        opts.on("--save-paths FILENAME", String, "Store path names of prepared jobs into this file") do |val|
           @options[:save_paths] = val
         end
         opts.on("--limit N", Integer, "Limit the number of environments to prepare. Default: prepare all environments") do |val|
@@ -206,42 +206,26 @@ module ApachaiHopachai
       result.join("; ")
     end
 
-    def create_plans(environments)
+    def create_jobs(environments)
       if @options[:save_paths]
         save_file = File.open(@options[:save_paths], "w")
       end
 
       begin
-        @logger.info "Creating planset: #{planset_path}"
-        Dir.mkdir(planset_path)
+        @logger.info "Creating jobset: #{jobset_path}"
+        Dir.mkdir(jobset_path)
 
         environments.each_with_index do |env, i|
-          plan_path = path_for_environment(env, i)
-          @logger.info "Preparing plan ##{i + 1}: #{inspect_env(env)}"
-          @logger.info "Saving plan into #{plan_path}"
-
-          Dir.mkdir(plan_path)
-          begin
-            FileUtils.cp_r(Dir["#{@work_dir}/*"], plan_path)
-            File.open("#{plan_path}/travis.yml", "w") do |io|
-              YAML.dump(env, io)
-            end
-            File.open("#{plan_path}/info.yml", "w") do |io|
-              YAML.dump(plan_info_for(env, i), io)
-            end
-          rescue Exception
-            FileUtils.remove_entry_secure(plan_path)
-            raise
-          end
+          path = create_job(env, i)
           if save_file
-            save_file.puts(plan_path)
+            save_file.puts(path)
             save_file.flush
           end
         end
 
-        @logger.info "Committing planset"
-        File.open("#{planset_path}/info.yml", "w") do |io|
-          YAML.dump(planset_info, io)
+        @logger.info "Committing jobset #{jobset_path}"
+        File.open("#{jobset_path}/info.yml", "w") do |io|
+          YAML.dump(jobset_info, io)
         end
       ensure
         if @options[:save_paths]
@@ -250,25 +234,47 @@ module ApachaiHopachai
       end
     end
 
-    def planset_path
-      @planset_path ||= File.expand_path(@options[:output_dir] +
-        "/" + Time.now.strftime("%Y-%m-%d-%H:%M:%S") + ".appa-planset")
+    def create_job(env, i)
+      path = job_path(env, i)
+      @logger.info "Preparing job ##{i + 1}: #{inspect_env(env)}"
+      @logger.info "Saving job into #{path}"
+
+      Dir.mkdir(path)
+      begin
+        FileUtils.cp_r(Dir["#{@work_dir}/*"], path)
+        File.open("#{path}/travis.yml", "w") do |io|
+          YAML.dump(env, io)
+        end
+        File.open("#{path}/info.yml", "w") do |io|
+          YAML.dump(job_info(env, i), io)
+        end
+      rescue Exception
+        FileUtils.remove_entry_secure(path)
+        raise
+      end
+
+      path
     end
 
-    def path_for_environment(env, i)
-      File.expand_path("#{planset_path}/#{i + 1}.appa-plan")
+    def job_path(env, i)
+      File.expand_path("#{jobset_path}/#{i + 1}.appa-job")
     end
 
-    def plan_info_for(env, i)
-      @repo_info.merge(
+    def job_info(env, i)
+      {
         'id' => i + 1,
         'name' => "##{i + 1}",
-        'preparation_time' => Time.now,
+        'created_at' => Time.now,
         'env_name' => inspect_env(env)
-      )
+      }
     end
 
-    def planset_info
+    def jobset_path
+      @jobset_path ||= File.expand_path(@options[:output_dir] +
+        "/" + Time.now.strftime("%Y-%m-%d-%H:%M:%S") + ".appa-jobset")
+    end
+
+    def jobset_info
       result = @repo_info.merge(
         'repo_url' => @options[:repository],
         'file_version' => '1.0',
