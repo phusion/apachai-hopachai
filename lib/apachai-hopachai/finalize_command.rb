@@ -53,6 +53,10 @@ module ApachaiHopachai
         opts.on("--report FILENAME", String, "Save report to this file instead of into the jobset") do |val|
           @options[:report] = val
         end
+        opts.on("--format-report-filename", "Specify that the report filename is a format string.#{nl}" +
+                "'%{status}' is substituted with the build status.") do
+          @options[:format_report_filename] = true
+        end
         opts.on("--email EMAIL", String, "Notify the given email address") do |val|
           @options[:email] = val
         end
@@ -129,9 +133,8 @@ module ApachaiHopachai
 
       template = ERB.new(File.read("#{RESOURCES_DIR}/report.html.erb"))
       @report  = template.result(binding)
-      filename = @options[:report] || "#{@jobset_path}/report.html"
-      @logger.info "Saving report to #{filename}"
-      File.open(filename, "w") do |f|
+      @logger.info "Saving report to #{report_filename}"
+      File.open(report_filename, "w") do |f|
         f.write(@report)
       end
     end
@@ -153,6 +156,20 @@ module ApachaiHopachai
         mail.add_file :filename => 'report.html', :content => @report
         mail.delivery_method :sendmail
         mail.deliver
+      end
+    end
+
+    def report_filename
+      @report_filename ||= begin
+        if @options[:report]
+          if @options[:format_report_filename]
+            @options[:report] % { :status => passed? ? 'PASS' : 'FAIL' }
+          else
+            @options[:report]
+          end
+        else
+          "#{@jobset_path}/report.html"
+        end
       end
     end
 

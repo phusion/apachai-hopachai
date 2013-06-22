@@ -268,6 +268,7 @@ module ApachaiHopachai
       if @options[:report_dir]
         finalize_args << "--report"
         finalize_args << next_report_filename
+        finalize_args << "--format-report-filename"
       end
       command = FinalizeCommand.new([finalize_args, "--", jobset.path].flatten)
       command.logger = @logger
@@ -280,10 +281,10 @@ module ApachaiHopachai
       now = Time.now.strftime("%Y-%m-%d-%H:%M:%S")
       if @last_report_time == now
         @last_report_number += 1
-        "#{@options[:report_dir]}/appa-report-#{now}-#{@last_report_number}.html"
+        "#{@options[:report_dir]}/appa-report-#{now}-#{@last_report_number}-%{status}.html"
       else
         @last_report_number = 1
-        "#{@options[:report_dir]}/appa-report-#{now}-1.html"
+        "#{@options[:report_dir]}/appa-report-#{now}-1-%{status}.html"
       end
     end
 
