@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title><%= @commit %> - Apachai Hopachai CI report</title>
+    <title><%= changeset_name %> - <%= @jobset_info['repo_name'] %> - Apachai Hopachai CI report</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">
     <script>
@@ -92,46 +92,50 @@
   <body>
     <div class="container">
       <div class="logo">
-        <img class="logo-image" src="data:image/png;base64,<%= Base64.strict_encode64(@info[:logo]) %>" title="http://openclipart.org/detail/72439/muaythai006-by-aungkarns"><br>
+        <img class="logo-image" src="data:image/png;base64,<%= Base64.strict_encode64(logo_data) %>" title="http://openclipart.org/detail/72439/muaythai006-by-aungkarns"><br>
         <div class="logo-text">Apachai Hopachai CI report</div>
       </div>
 
       <h2>Summary</h2>
+      <h2><small><%= @jobset_info['repo_name'] %></small></h2>
       <table class="summary-table">
         <tr>
           <td class="summary-header">Date</td>
-          <td class="summary-value"><%=h @info[:date] %></td>
+          <td class="summary-value"><%=h start_time %></td>
 
-          <td class="summary-header summary-2nd-column">Commit</td>
-          <td class="summary-value"><%=h @info[:commit] %></td>
+          <td class="summary-header summary-2nd-column">Repository</td>
+          <td class="summary-value"><%=h @jobset_info['repo_name'] %></td>
         </tr>
         <tr>
           <td class="summary-header">State</td>
           <td class="summary-value">
-            <% if @info[:passed] %>
+            <% if passed? %>
               <span class="job-label label label-success">Passed</span>
             <% else %>
               <span class="job-label label label-important">Failed</span>
             <% end %>
           </td>
 
-          <td class="summary-header summary-2nd-column">Author</td>
-          <td class="summary-value"><%=h @info[:author] %></td>
+          <td class="summary-header summary-2nd-column">Commit</td>
+          <td class="summary-value"><%=h @jobset_info['commit'] %></td>
         </tr>
         <tr>
           <td class="summary-header">Finished</td>
-          <td class="summary-value"><%=h @finished_date %></td>
+          <td class="summary-value"><%=h finish_time %></td>
 
-          <td class="summary-header summary-2nd-column">Committer</td>
-          <td class="summary-value"><%=h @info[:committer] %></td>
+          <td class="summary-header summary-2nd-column">Author</td>
+          <td class="summary-value"><%=h @jobset_info['author'] %></td>
         </tr>
         <tr>
           <td class="summary-header">Duration</td>
-          <td class="summary-value" colspan="3"><%= @info[:duration] %></td>
+          <td class="summary-value"><%= duration %></td>
+
+          <td class="summary-header summary-2nd-column">Committer</td>
+          <td class="summary-value"><%=h @jobset_info['committer'] %></td>
         </tr>
         <tr>
           <td class="summary-header">Message</td>
-          <td class="summary-value" colspan="3"><%=h @info[:subject] %></td>
+          <td class="summary-value" colspan="3"><%=h @jobset_info['subject'] %></td>
         </tr>
       </table>
 
@@ -148,10 +152,17 @@
         <tbody>
           <% for job in @jobs %>
             <tr>
-              <td><a href="#job-<%=h job[:id] %>" class="job-link"><%=h job[:name] %></a></td>
-              <td><%=h job[:duration] %></td>
-              <td><%=h job[:finished] %></td>
-              <td><%=h job[:env] %></td>
+              <td>
+                <a href="#job-<%=h job[:info]['id'] %>" class="job-link"><%=h job[:info]['name'] %></a>
+                <% if job[:result]['passed'] %>
+                  <a href="#job-<%=h job[:info]['id'] %>" class="job-link"><span class="job-label label label-small label-success">Passed</span></a>
+                <% else %>
+                  <a href="#job-<%=h job[:info]['id'] %>" class="job-link"><span class="job-label label label-important">Failed</span></a>
+                <% end %>
+              </td>
+              <td><%=h job[:result]['duration'] %></td>
+              <td><%=h job[:result]['end_time'] %></td>
+              <td><%=h job[:info]['env_name'] %></td>
             </tr>
           <% end %>
         </tbody>
@@ -160,9 +171,9 @@
       <hr>
 
       <% for job in @jobs %>
-        <h2 id="job-<%=h job[:id] %>" class="job-header">
-          <a href="#job-<%=h job[:id] %>" class="job-anchor">Job <%=h job[:name] %></a>
-          <% if job[:passed] %>
+        <h2 id="job-<%=h job[:info]['id'] %>" class="job-header">
+          <a href="#job-<%=h job[:info]['id'] %>" class="job-anchor">Job <%=h job[:info]['name'] %></a>
+          <% if job[:result]['passed'] %>
             <span class="job-label label label-success">Passed</span>
           <% else %>
             <span class="job-label label label-important">Failed</span>

@@ -274,7 +274,12 @@ module ApachaiHopachai
       result['before_commit'] = shorten_sha(result['before_sha'])
 
       result['repo_url'] = @options[:repository]
-      result['repo_name'] = @options[:repo_name] if @options[:repo_name]
+      if @options[:repo_name]
+        result['repo_name'] = @options[:repo_name]
+      else
+        result['repo_name'] = @options[:repository].sub(/.*\//, '')
+      end
+
       result['file_version'] = '1.0'
       result['preparation_time'] = Time.now
 

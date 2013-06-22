@@ -1,5 +1,9 @@
+require 'apachai-hopachai/command_utils'
+
 module ApachaiHopachai
   class FinalizeCommand < Command
+    include CommandUtils
+
     def self.description
       "Finalize test jobs"
     end
@@ -12,7 +16,7 @@ module ApachaiHopachai
       super(*args)
       @options = {
         :email_from => "Apachai Hopachai CI <#{`whoami`.strip}@localhost>",
-        :email_subject => "[%{status}] %{name} (%{before_commit} - %{commit})"
+        :email_subject => "[%{status}] %{repo_name} (%{before_commit} - %{commit})"
       }
     end
 
@@ -30,6 +34,7 @@ module ApachaiHopachai
       require 'safe_yaml'
       require 'ansi2html/main'
       require 'erb'
+      require 'base64'
       require 'stringio'
     end
 
@@ -111,17 +116,12 @@ module ApachaiHopachai
     end
 
     def save_report
-      @info = @jobset_info.dup
-      @info[:logo] = File.open("#{ROOT}/src/logo.png", "rb") { |f| f.read }
-      @info[:passed] = @jobs.all? { |job| job[:result]['passed'] }
-
       @jobs.each do |job|
         log = File.open("#{job[:path]}/output.log", "rb") { |f| f.read }
         html_log = StringIO.new
         ANSI2HTML::Main.new(log, html_log)
         job[:html_log] = html_log.string
       end
-      @jobs = @jobs
 
       template = ERB.new(File.read("#{ROOT}/src/report.html.erb"))
       report   = template.result(binding)
@@ -134,8 +134,10 @@ module ApachaiHopachai
 
     def send_notification
       if @options[:email]
-        subject = @options[:email_subject] % @jobset_info
-        IO.popen("sendmail -t", "w") do |f|
+        info = symbolize_keys(@jobset_info).merge(:status => passed? ? 'Passed' : 'Failed')
+        p info
+        subject = @options[:email_subject] % info
+        IO.popen("cat", "w") do |f|
           f.puts "From: #{@options[:email_from]}"
           f.puts "To: #{@options[:email]}"
           f.puts "Subject: #{subject}"
@@ -144,8 +146,42 @@ module ApachaiHopachai
       end
     end
 
+    def symbolize_keys(hash)
+      result = {}
+      hash.each_pair do |key, val|
+        result[key.to_sym] = val
+      end
+      result
+    end
+
+    ### Template helpers ###
+
     def h(text)
       ERB::Util.h(text)
+    end
+
+    def changeset_name
+      @jobset_info['before_commit'] + " - " + @jobset_info['commit']
+    end
+
+    def passed?
+      @jobs.all? { |job| job[:result]['passed'] }
+    end
+
+    def logo_data
+      File.open("#{ROOT}/src/logo.png", "rb") { |f| f.read }
+    end
+
+    def start_time
+      @jobs.map{ |j| j[:result]['start_time'] }.min
+    end
+
+    def finish_time
+      @jobs.map{ |j| j[:result]['end_time'] }.max
+    end
+
+    def duration
+      distance_of_time_in_hours_and_minutes(start_time, finish_time)
     end
   end
 end
