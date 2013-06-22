@@ -57,6 +57,12 @@ module ApachaiHopachai
         opts.on("--limit N", Integer, "Limit the number of environments to prepare. Default: prepare all environments") do |val|
           @options[:limit] = val
         end
+        opts.on("--repo-name NAME", String, "A friendly name for the repository, to display in reports") do |val|
+          @options[:repo_name] = val
+        end
+        opts.on("--before-sha SHA", String, "The SHA of the beginning of the changeset, to display in reports") do |val|
+          @options[:before_sha] = val
+        end
         opts.on("--daemonize", "-d", "Daemonize into background") do
           @options[:daemonize] = true
         end
@@ -258,12 +264,25 @@ module ApachaiHopachai
     end
 
     def jobset_info
-      result = @repo_info.merge(
-        'repo_url' => @options[:repository],
-        'file_version' => '1.0',
-        'preparation_time' => Time.now
-      )
+      result = @repo_info.dup
+
+      if @options[:before_sha]
+        result['before_sha'] = @options[:before_sha]
+      else
+        result['before_sha'] = result['sha']
+      end
+      result['before_commit'] = shorten_sha(result['before_sha'])
+
+      result['repo_url'] = @options[:repository]
+      result['repo_name'] = @options[:repo_name] if @options[:repo_name]
+      result['file_version'] = '1.0'
+      result['preparation_time'] = Time.now
+
       result
+    end
+
+    def shorten_sha(sha)
+      sha[0..6]
     end
   end
 end
