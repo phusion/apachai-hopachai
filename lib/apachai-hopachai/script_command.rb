@@ -144,7 +144,7 @@ module ApachaiHopachai
       @logger.info "Sending input"
 
       @logger.debug "Sending runner"
-      write_string(@main_socket, File.read("#{ROOT}/src/runner.rb"))
+      write_string(@main_socket, File.read("#{RESOURCES_DIR}/runner.rb"))
 
       @logger.debug "Sending options"
       write_string(@main_socket, Marshal.dump(

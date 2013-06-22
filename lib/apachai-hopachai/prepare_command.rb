@@ -109,7 +109,7 @@ module ApachaiHopachai
 
     def create_work_dir
       @work_dir = Dir.mktmpdir("appa-")
-      FileUtils.cp("#{ROOT}/travis-emulator-app/main", "#{@work_dir}/main")
+      FileUtils.cp("#{RESOURCES_DIR}/travis-emulator-app/main", "#{@work_dir}/main")
     end
 
     def destroy_work_dir

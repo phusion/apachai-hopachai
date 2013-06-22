@@ -124,7 +124,7 @@ module ApachaiHopachai
         job[:html_log] = html_log.string
       end
 
-      template = ERB.new(File.read("#{ROOT}/src/report.html.erb"))
+      template = ERB.new(File.read("#{RESOURCES_DIR}/report.html.erb"))
       @report  = template.result(binding)
       filename = @options[:report] || "#{@jobset_path}/report.html"
       @logger.info "Saving report to #{filename}"
@@ -139,7 +139,7 @@ module ApachaiHopachai
         info = symbolize_keys(@jobset_info).merge(:status => passed? ? 'Passed' : 'Failed')
         subject = @options[:email_subject] % info
 
-        template = ERB.new(File.read("#{ROOT}/src/email.text.erb"))
+        template = ERB.new(File.read("#{RESOURCES_DIR}/email.text.erb"))
         text_body = template.result(binding)
 
         mail = Mail.new
@@ -176,7 +176,7 @@ module ApachaiHopachai
     end
 
     def logo_data
-      File.open("#{ROOT}/src/logo.png", "rb") { |f| f.read }
+      File.open("#{RESOURCES_DIR}/logo.png", "rb") { |f| f.read }
     end
 
     def start_time

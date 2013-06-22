@@ -12,7 +12,7 @@ module ApachaiHopachai
     end
   end
 
-  ROOT = File.expand_path(File.dirname(__FILE__) + "/../..")
+  RESOURCES_DIR = File.expand_path(File.dirname(__FILE__) + "/../../resources")
 
   COMMANDS = {
     'build'    => 'BuildCommand',
