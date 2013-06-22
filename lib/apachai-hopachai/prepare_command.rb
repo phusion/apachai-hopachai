@@ -260,7 +260,7 @@ module ApachaiHopachai
 
     def jobset_path
       @jobset_path ||= File.expand_path(@options[:output_dir] +
-        "/" + Time.now.strftime("%Y-%m-%d-%H:%M:%S") + ".appa-jobset")
+        "/" + Time.now.strftime("%Y-%m-%d-%H:%M:%S") + "-#{Process.pid}.appa-jobset")
     end
 
     def jobset_info

@@ -13,6 +13,8 @@ Gem::Specification.new do |s|
   s.license = "MIT"
   s.authors = ["Hongli Lai"]
   s.files = Dir[*APACHAI_HOPACHAI_FILES]
+
+  # Don't forget to synchronize webapps/Gemfile.
   s.add_dependency("safe_yaml")
   s.add_dependency("ansi2html")
   s.add_dependency("mail")

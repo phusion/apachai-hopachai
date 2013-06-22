@@ -1,0 +1,6 @@
+source 'https://rubygems.org'
+
+# Don't forget to synchronize with the gemspec.
+gem "safe_yaml"
+gem "ansi2html"
+gem "mail"
