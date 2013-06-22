@@ -19,6 +19,7 @@ module ApachaiHopachai
     'prepare'  => 'PrepareCommand',
     'run'      => 'RunCommand',
     'finalize' => 'FinalizeCommand',
+    'daemon'   => 'DaemonCommand',
     'script'   => 'ScriptCommand',
     'shell'    => 'ShellCommand',
     'help'     => 'HelpCommand'

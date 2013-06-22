@@ -7,10 +7,6 @@ abort "Please set the CONFIG_FILE environment variable" if !ENV['CONFIG_FILE']
 CONFIG = YAML.load_file(ENV['CONFIG_FILE'], :safe => true)
 ROOT   = File.expand_path(File.dirname(__FILE__) + "/..")
 
-def slug(title)
-  title.downcase.strip.gsub(' ', '-').gsub(/[^\w-]/, '')
-end
-
 def ruby_exe
   if defined?(PhusionPassenger)
     require 'phusion_passenger/platform_info/ruby'

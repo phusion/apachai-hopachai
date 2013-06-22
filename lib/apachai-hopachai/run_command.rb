@@ -1,8 +1,10 @@
 require 'apachai-hopachai/command_utils'
+require 'apachai-hopachai/jobset_utils'
 
 module ApachaiHopachai
   class RunCommand < Command
     include CommandUtils
+    include JobsetUtils
 
     def self.description
       "Run a test job"
@@ -20,12 +22,13 @@ module ApachaiHopachai
       read_and_verify_job
       create_work_dir
       begin
-        set_job_processing
+        @job.set_processing
         begin
           run_job
           save_result
+          notify_jobset_changed
         ensure
-          unset_job_processing
+          @job.unset_processing
         end
       rescue StandardError, SignalException => e
         exit(log_error(e))
@@ -98,35 +101,17 @@ module ApachaiHopachai
     end
 
     def read_and_verify_job
-      @jobset_path = File.dirname(@job_path)
-      abort "The given job is not in a jobset" if @jobset_path == @job_path
-      abort "The given jobset does not exist" if !File.exist?(@jobset_path)
-      abort "The given jobset is not complete" if !File.exist?("#{@jobset_path}/info.yml")
+      jobset_path = File.dirname(@job_path)
+      abort "The given job is not in a jobset" if jobset_path == @job_path
+      abort "The given jobset does not exist" if !File.exist?(jobset_path)
+
+      @jobset = Jobset.new(jobset_path)
+      abort "The given jobset is not complete" if !@jobset.complete?
+      abort "Jobset format version #{@jobset.version} is unsupported" if !@jobset.version_supported?
       
-      jobset_info = YAML.load_file("#{@jobset_path}/info.yml", :safe => true)
-      if jobset_info['file_version'] != '1.0'
-        abort "job format version #{jobset_info['file_version']} is unsupported"
-      end
-
-      @job_info = YAML.load_file("#{@job_path}/info.yml", :safe => true)
-      abort "job is already being processed" if job_processing?
-      abort "job has already been processed" if job_processed?
-    end
-
-    def job_processing?
-      File.exist?("#{@job_path}/processing")
-    end
-
-    def set_job_processing
-      File.open("#{@job_path}/processing", "w").close
-    end
-
-    def unset_job_processing
-      File.unlink("#{@job_path}/processing")
-    end
-
-    def job_processed?
-      File.exist?("#{@job_path}/result.yml")
+      @job = Job.new(@job_path)
+      abort "Job is already being processed" if @job.processing?
+      abort "Job has already been processed" if @job.processed?
     end
 
     def create_work_dir
@@ -138,7 +123,7 @@ module ApachaiHopachai
     end
 
     def run_job
-      @logger.info "Running job with environment: #{@job_info['env_name']}"
+      @logger.info "Running job with environment: #{@job.info['env_name']}"
 
       @run_result = { 'start_time' => Time.now }
       run_job_script_and_extract_result
@@ -185,6 +170,12 @@ module ApachaiHopachai
       File.open(filename, "w") do |io|
         YAML.dump(@run_result, io)
       end
+    end
+
+    def notify_jobset_changed
+      now = Time.now
+      File.utime(now, now, @jobset.path)
+      File.utime(now, now, @jobset.path + "/..")
     end
 
     def log_error(e)

@@ -1,4 +1,5 @@
 APACHAI_HOPACHAI_FILES = [
+  "*.gemspec",
   "bin/**/*",
   "lib/**/*",
   "resources/**/*",

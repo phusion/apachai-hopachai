@@ -18,6 +18,7 @@ module ApachaiHopachai
 private
   def self.run_command(command_name, argv = [])
     if klass = get_class_for_command(command_name)
+      klass.require_libs if klass.respond_to?(:require_libs)
       object = klass.new(argv)
       object.run
       object.exit_status
