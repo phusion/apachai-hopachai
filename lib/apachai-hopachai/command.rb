@@ -15,12 +15,13 @@ module ApachaiHopachai
   ROOT = File.expand_path(File.dirname(__FILE__) + "/../..")
 
   COMMANDS = {
-    'build'   => 'BuildCommand',
-    'prepare' => 'PrepareCommand',
-    'run'     => 'RunCommand',
-    'script'  => 'ScriptCommand',
-    'shell'   => 'ShellCommand',
-    'help'    => 'HelpCommand'
+    'build'    => 'BuildCommand',
+    'prepare'  => 'PrepareCommand',
+    'run'      => 'RunCommand',
+    'finalize' => 'FinalizeCommand',
+    'script'   => 'ScriptCommand',
+    'shell'    => 'ShellCommand',
+    'help'     => 'HelpCommand'
   }
 
   def self.get_class_for_command(command_name)

@@ -5,7 +5,7 @@ module ApachaiHopachai
     include CommandUtils
 
     def self.description
-      "Run a test"
+      "Run a prepared test"
     end
 
     def self.help
@@ -20,8 +20,13 @@ module ApachaiHopachai
       read_and_verify_plan
       create_work_dir
       begin
-        run_plan
-        save_result
+        set_plan_processing
+        begin
+          run_plan
+          save_result
+        ensure
+          unset_plan_processing
+        end
       rescue StandardError, SignalException => e
         exit(log_error(e))
       ensure
@@ -35,14 +40,13 @@ module ApachaiHopachai
       require 'apachai-hopachai/script_command'
       require 'tmpdir'
       require 'safe_yaml'
-      require 'thwait'
     end
 
     def option_parser
       require 'optparse'
       OptionParser.new do |opts|
         nl = "\n#{' ' * 37}"
-        opts.banner = "Usage: appa run [OPTIONS] PLAN_PATH..."
+        opts.banner = "Usage: appa run [OPTIONS] PLAN_PATH"
         opts.separator ""
         
         opts.separator "Options:"
@@ -94,11 +98,13 @@ module ApachaiHopachai
       @planset_path = File.dirname(@plan_path)
       abort "The given plan is not in a planset" if @planset_path == @plan_path
       abort "The given planset is not complete" if !File.exist?("#{@planset_path}/info.yml")
+      
       @planset_info = YAML.load_file("#{@planset_path}/info.yml", :safe => true)
-      @plan_info = YAML.load_file("#{@plan_path}/info.yml", :safe => true)
       if @planset_info['file_version'] != '1.0'
         abort "Plan format version #{@planset_info['file_version']} is unsupported"
       end
+
+      @plan_info = YAML.load_file("#{@plan_path}/info.yml", :safe => true)
       abort "Plan is already being processed" if plan_processing?
       abort "Plan has already been processed" if plan_processed?
     end
@@ -107,11 +113,11 @@ module ApachaiHopachai
       File.exist?("#{@plan_path}/processing")
     end
 
-    def set_plan_processing!
+    def set_plan_processing
       File.open("#{@plan_path}/processing", "w").close
     end
 
-    def unset_plan_processing!
+    def unset_plan_processing
       File.unlink("#{@plan_path}/processing")
     end
 
@@ -129,7 +135,6 @@ module ApachaiHopachai
 
     def run_plan
       @logger.info "Running plan with environment: #{@plan_info['env_name']}"
-      set_plan_processing!
 
       @run_result = { 'start_time' => Time.now }
       run_plan_script_and_extract_result
@@ -174,7 +179,6 @@ module ApachaiHopachai
       File.open(filename, "w") do |io|
         YAML.dump(@run_result, io)
       end
-      unset_plan_processing!
     end
 
     def log_error(e)
