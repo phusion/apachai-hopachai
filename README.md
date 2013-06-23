@@ -29,7 +29,6 @@ A typical Apachai Hopachai usage scenario looks like this:
 Install the following requirements:
 
  * [Docker](http://www.docker.io/gettingstarted/)
- * [Phusion Passenger + Nginx](http://www.modrails.com/documentation/Users%20guide%20Nginx.html#install_on_debian_ubuntu)
  * The `sendmail` command: `sudo apt-get install postfix`
  * The `inotifywatch` command: `sudo apt-get install inotify-tools`
  * Ruby 1.9:
@@ -39,6 +38,7 @@ Install the following requirements:
         sudo update-alternatives --set gem /usr/bin/gem1.9.1
  * Bundler: `sudo gem install bundler`
  * Runit (for managing the daemon): `sudo apt-get install runit`
+ * [Phusion Passenger + Nginx](http://www.modrails.com/documentation/Users%20guide%20Nginx.html#install_on_debian_ubuntu) (for serving the webhook server)
 
 Then install the gem:
 
