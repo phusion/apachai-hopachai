@@ -75,7 +75,8 @@ Create a Runit service for the Apachai Hopachai daemon:
     #!/bin/bash
     EMAIL=me@myserver.com
     EMAIL_FROM=me@myserver.com
-    exec chpst -u appa-daemon ruby1.9.1 -S appa daemon \
+    cd /var/lib/appa-daemon/queue
+    exec chpst -u appa-daemon nice ruby1.9.1 -S appa daemon \
       --log-file /var/log/appa-daemon.log \
       --email \$EMAIL \
       --email-from \$EMAIL_FROM \

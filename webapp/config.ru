@@ -33,7 +33,7 @@ app = lambda do |env|
   input = JSON.parse(env['rack.input'].read)
 
   command = Shellwords.join([
-    ruby_exe, "-S", "appa", "prepare",
+    "nice", ruby_exe, "-S", "appa", "prepare",
     input['repository']['url'],
     input['after'],
     "--output-dir", CONFIG['queue_dir'],
