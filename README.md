@@ -38,7 +38,7 @@ Install the following requirements:
         sudo update-alternatives --set gem /usr/bin/gem1.9.1
  * Bundler: `sudo gem install bundler`
  * Runit (for managing the daemon): `sudo apt-get install runit`
- * [Phusion Passenger + Nginx](http://www.modrails.com/documentation/Users%20guide%20Nginx.html#install_on_debian_ubuntu) (for serving the webhook server)
+ * [Phusion Passenger + Nginx](https://www.phusionpassenger.com/) (for serving the webhook server)
 
 Then install the gem:
 
@@ -97,20 +97,14 @@ Install the gem bundle for the webhook server:
 
 Next, setup a virtual host entry for Phusion Passenger + Nginx to serve the webhook server:
 
-    sudo tee /etc/nginx/conf.d/appa-webapp.conf <<EOF >/dev/null
     server {
         server_name yourdomain.com;  # Customize this!
         root /opt/appa-webapp/public;
-        passenger_ruby /usr/bin/ruby;
+        passenger_ruby /usr/bin/ruby1.9.1;
         passenger_enabled on;
     }
-    EOF
 
-Restart Nginx:
-
-    sudo /etc/init.d/nginx reload
-
-Your webhook is now accessible through http://yourdomain.com/. Fill in this address in Github or Gitlab.
+After restarting Nginx, your webhook is accessible through http://yourdomain.com/. Fill in this address in Github or Gitlab.
 
 ## Upgrading
 
@@ -118,4 +112,4 @@ Your webhook is now accessible through http://yourdomain.com/. Fill in this addr
  2. Install the latest version of Apachai Hopachai: `sudo gem install apachai-hopachai && sudo appa setup-symlinks && sudo appa build-image`
  3. Start the daemon: `sudo sv start /etc/service/appa-daemon`
  4. Reinstall the bundle for the webhook server, as described in "Setting up the webhook".
- 5. Restart the webhook server: `sudo touch /opt/appa-webapp/tmp/restart.txt`, where `$webhook_server_dir` is the value you saw you in "Setting up the webhook".
+ 5. Restart the webhook server: `sudo touch /opt/appa-webapp/tmp/restart.txt`, then restart Nginx.
