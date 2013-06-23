@@ -2,3 +2,4 @@
 /tmp
 /*.tar.gz
 /output
+.bundle

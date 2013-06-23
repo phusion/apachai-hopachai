@@ -2,17 +2,17 @@
 
 Apachai Hopachai is a Continuous Integration (CI) system similar to [Travis CI](https://travis-ci.org/). Its main purpose is to run automated tests on every git push. Tests are run in an isolated environment so they can do anything, including running tests that require root privileges, without affecting the host machine.
 
+## Highlights
+
 Apachai Hopachai is built with a Unix-like architecture, meaning that it consists of multiple small components, each doing only one thing, but doing it well. The entire system is simply a collection of these small components integrated with each other. This makes the system transparent and easy to debug.
 
 Apachai Hopachai is designed to run on one's own servers with minimal installation hassle. This allows it to be used with any privately hosted Git repository, not just those on Github.
 
 It is also designed to be extremely lightweight. It uses [Docker](http://www.docker.io/) for isolation, instead of using virtual machines. This minimizes resource usage. You can run everything on just a single machine.
 
-Finally, Apachai Hopachai uses the same configuration file format as Travis CI, `.travis.yml`. If you're already using Travis then using Apachai Hopachai should be easy. Note that Apachai Hopachai is still under development, so not all Travis config options are supported yet.
+Apachai Hopachai uses the same configuration file format as Travis CI, `.travis.yml`. If you're already using Travis then using Apachai Hopachai should be easy. Note that Apachai Hopachai is still under development, so not all Travis config options are supported yet.
 
-## Linux only
-
-Because Docker requires a Linux 3.8 kernel, Apachai Hopachai only works on recent Linux distributions.
+And because Docker requires a Linux 3.8 kernel, Apachai Hopachai only works on recent Linux distributions.
 
 ## System and usage overview
 
