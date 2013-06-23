@@ -34,9 +34,9 @@ Install the following requirements:
  * The `inotifywatch` command: `sudo apt-get install inotify-tools`
  * Ruby 1.9:
 
-       sudo apt-get install ruby1.9.1
-       sudo update-alternatives --set ruby /usr/bin/ruby1.9.1
-       sudo update-alternatives --set gem /usr/bin/gem1.9.1
+        sudo apt-get install ruby1.9.1
+        sudo update-alternatives --set ruby /usr/bin/ruby1.9.1
+        sudo update-alternatives --set gem /usr/bin/gem1.9.1
  * Bundler: `sudo gem install bundler`
  * Runit (for managing the daemon): `sudo apt-get install runit`
 
