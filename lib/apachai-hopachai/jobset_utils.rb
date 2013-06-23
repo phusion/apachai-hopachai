@@ -51,6 +51,10 @@ module ApachaiHopachai
         @info ||= YAML.load_file("#{@path}/info.yml", :safe => true)
       end
 
+      def valid?
+        @path =~ /\.appa-job$/ && File.exist?("#{@path}/info.yml")
+      end
+
       # Returns whether this job directory is currently being
       # processed by an 'appa run' command.
       def processing?

@@ -113,13 +113,14 @@ module ApachaiHopachai
       abort "The given job is not in a jobset" if jobset_path == @job_path
       abort "The given jobset does not exist" if !File.exist?(jobset_path)
 
+      @job = Job.new(@job_path)
+      abort "The given path is not a valid job" if !@job.valid?
+      abort "Job is already being processed" if @job.processing?
+      abort "Job has already been processed" if @job.processed?
+
       @jobset = Jobset.new(jobset_path)
       abort "The given jobset is not complete" if !@jobset.complete?
       abort "Jobset format version #{@jobset.version} is unsupported" if !@jobset.version_supported?
-      
-      @job = Job.new(@job_path)
-      abort "Job is already being processed" if @job.processing?
-      abort "Job has already been processed" if @job.processed?
     end
 
     def create_work_dir
