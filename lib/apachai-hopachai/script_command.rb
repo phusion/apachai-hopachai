@@ -128,23 +128,7 @@ module ApachaiHopachai
       abort "Cannot query host port for Docker container port 3002" if @main_port == 0
       @logger.debug("Host port for Docker container port 3002 is #{@main_port}")
       @logger.info("Connecting to container")
-
-      while true
-        sleep 0.1
-        @main_socket = TCPSocket.new('127.0.0.1', @main_port)
-        @main_socket.sync = true
-        @main_socket.binmode
-        begin
-          handshake = @main_socket.readline
-        rescue EOFError
-          handshake = nil
-        end
-        if handshake == "You have control\n"
-          break
-        else
-          @main_socket.close
-        end
-      end
+      @main_socket = wait_for_socket_and_handshake('127.0.0.1', @main_port)
     end
 
     def close_connection
@@ -215,23 +199,7 @@ module ApachaiHopachai
       abort "Cannot query host port for Docker container port 3003" if @status_port == 0
       @logger.debug("Host port for Docker container port 3003 is #{@status_port}")
       @logger.info("Connecting to container status server")
-      
-      while true
-        sleep 0.1
-        @status_socket = TCPSocket.new('127.0.0.1', @status_port)
-        @status_socket.sync = true
-        @status_socket.binmode
-        begin
-          handshake = @status_socket.readline
-        rescue EOFError
-          handshake = nil
-        end
-        if handshake == "You have control\n"
-          break
-        else
-          @status_socket.close
-        end
-      end
+      @status_socket = wait_for_socket_and_handshake('127.0.0.1', @status_port)
       @logger.info("Connected to status server!")
 
       @status_thread = Thread.new do
@@ -266,6 +234,33 @@ module ApachaiHopachai
         e.exit_status
       else
         1
+      end
+    end
+
+    def wait_for_socket_and_handshake(host, port)
+      while true
+        sleep 0.1
+        
+        begin
+          socket = TCPSocket.new(host, port)
+        rescue Errno::ECONNREFUSED
+          # Try again
+          next
+        end
+
+        socket.sync = true
+        socket.binmode
+        begin
+          handshake = socket.readline
+        rescue EOFError
+          handshake = nil
+        end
+        if handshake == "You have control\n"
+          return socket
+        else
+          socket.close
+          # Try again.
+        end
       end
     end
 
