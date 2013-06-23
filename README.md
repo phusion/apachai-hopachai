@@ -63,9 +63,14 @@ Create a configuration file:
     EOF
     sudo chown appa-daemon:appa-daemon /etc/apachai-hopachai.yml
 
+Create a log file:
+
+    sudo touch /var/log/appa-daemon.log
+    sudo chown appa-daemon:appa-daemon /var/log/appa-daemon.log
+
 Create a Runit service for the Apachai Hopachai daemon:
 
-    sudo mkdir /etc/service/appa-daemon
+    sudo mkdir -p /etc/service/appa-daemon
     sudo tee /etc/service/appa-daemon/run.new <<EOF >/dev/null
     #!/bin/bash
     EMAIL=me@myserver.com
@@ -79,15 +84,15 @@ Create a Runit service for the Apachai Hopachai daemon:
     sudo chmod +x /etc/service/appa-daemon/run.new
     sudo mv /etc/service/appa-daemon/run.new /etc/service/appa-daemon/run
 
-Be sure to customize the `EMAIL` and `EMAIL_FROM` fields. They specify what email address to send reports to, and what "From" address to use in such emails.
+Runit will automatically start the daemon. Be sure to customize the `EMAIL` and `EMAIL_FROM` fields. They specify what email address to send reports to, and what "From" address to use in such emails.
 
 ### Setting up the webhook
 
 Install the gem bundle for the webhook server:
 
     cd /opt/appa-webapp
-    sudo appa-daemon mkdir -p .bundle
-    sudo -u chown -R appa-daemon:appa-daemon .bundle
+    sudo -u appa-daemon mkdir -p .bundle
+    sudo -u appa-daemon chown -R appa-daemon:appa-daemon .bundle
     sudo -u appa-daemon bundle install --deployment --without=development --path=/var/lib/appa-daemon
 
 Next, setup a virtual host entry for Phusion Passenger + Nginx to serve the webhook server:
