@@ -75,8 +75,10 @@ module ApachaiHopachai
     end
 
     def run_shell
-      result = system("docker run -t -i -h=apachai-hopachai -u=appa -p 3002 -p 3003 " +
-        "apachai-hopachai sudo -u appa -H /bin/bash -l")
+      command = "docker run -t -i -h=apachai-hopachai -p 3002 -p 3003 " +
+        "apachai-hopachai sudo -u appa -H /bin/bash -l"
+      @logger.info "Running: #{command}"
+      result = system(command)
       exit 1 if !result
     end
 
