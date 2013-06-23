@@ -106,7 +106,7 @@ Next, setup a virtual host entry for Phusion Passenger + Nginx to serve the webh
         passenger_user appa-daemon;
     }
 
-After restarting Nginx, your webhook is accessible through http://yourdomain.com/. Fill in this address in Github or Gitlab.
+After restarting Nginx, your webhook is accessible through http://yourdomain.com/webhook. Fill in this address in Github or Gitlab.
 
 ## Upgrading
 
