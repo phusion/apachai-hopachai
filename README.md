@@ -102,6 +102,7 @@ Next, setup a virtual host entry for Phusion Passenger + Nginx to serve the webh
         root /opt/appa-webapp/public;
         passenger_ruby /usr/bin/ruby1.9.1;
         passenger_enabled on;
+        passenger_user appa-daemon;
     }
 
 After restarting Nginx, your webhook is accessible through http://yourdomain.com/. Fill in this address in Github or Gitlab.

@@ -1,10 +1,12 @@
 GEM
   remote: https://rubygems.org/
   specs:
+    rack (1.5.2)
     safe_yaml (0.9.3)
 
 PLATFORMS
   ruby
 
 DEPENDENCIES
+  rack
   safe_yaml
