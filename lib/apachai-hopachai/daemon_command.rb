@@ -32,6 +32,8 @@ module ApachaiHopachai
 
     def start
       parse_argv
+      check_symlinks
+      check_container_image_exists
       maybe_set_log_file
       maybe_daemonize
       maybe_create_pid_file

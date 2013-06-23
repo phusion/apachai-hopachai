@@ -1,11 +1,11 @@
 module ApachaiHopachai
-  class BuildCommand < Command
+  class BuildImageCommand < Command
     def self.description
       "Build the container image"
     end
 
     def self.help
-      puts "Usage: appa build"
+      puts "Usage: appa build-image"
       puts "Builds the container image."
     end
 

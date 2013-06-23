@@ -12,10 +12,15 @@ module ApachaiHopachai
     end
   end
 
-  RESOURCES_DIR = File.expand_path(File.dirname(__FILE__) + "/../../resources")
+  NATIVELY_PACKAGED = false
+  SOURCE_ROOT   = File.expand_path(File.dirname(__FILE__) + "/../..")
+  RESOURCES_DIR = "#{SOURCE_ROOT}/resources"
+  WEBAPP_DIR    = "#{SOURCE_ROOT}/webapp"
+  WEBAPP_SYMLINK = "/opt/appa-webapp"
 
   COMMANDS = {
-    'build'    => 'BuildCommand',
+    'build-image'    => 'BuildImageCommand',
+    'setup-symlinks' => 'SetupSymlinksCommand',
     'prepare'  => 'PrepareCommand',
     'run'      => 'RunCommand',
     'finalize' => 'FinalizeCommand',

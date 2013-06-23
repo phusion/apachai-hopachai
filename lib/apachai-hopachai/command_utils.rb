@@ -85,6 +85,50 @@ module ApachaiHopachai
       end
     end
 
+    def need_checking_for_system_symlinks?
+      !NATIVELY_PACKAGED
+    end
+
+    def system_symlinks_exist?
+      File.symlink?(WEBAPP_SYMLINK) && File.exist?(WEBAPP_SYMLINK)
+    end
+
+    def system_symlinks_correct?
+      File.readlink(WEBAPP_SYMLINK) == WEBAPP_DIR
+    end
+
+    def check_symlinks
+      if need_checking_for_system_symlinks?
+        if system_symlinks_exist?
+          if !system_symlinks_correct?
+            message = "The system symlinks for Apachai Hopachai exist, but are broken."
+          end
+        else
+          message = "The system symlinks for Apachai Hopachai don't exist!"
+        end
+        if message
+          message = "!!! #{message}!! Please run this command to fix them:\n" +
+            "\n" +
+            "   # If you're using RVM:\n" +
+            "   rvmsudo appa setup-symlinks\n" +
+            "\n" +
+            "   # If you're not using RVM, or don't know what RVM is:\n" +
+            "   sudo appa setup-symlinks\n"
+          if STDOUT.tty?
+            @logger.warn("\e[33m\e[40m#{message}\e[0m")
+          else
+            @logger.warn(message)
+          end
+        end
+      end
+    end
+
+    def check_container_image_exists
+      if `docker images` !~ /apachai-hopachai/
+        abort "Container image 'apachai-hopachai' does not exist. Please build it first with 'appa build-image'."
+      end
+    end
+
     def distance_of_time_in_hours_and_minutes(from_time, to_time)
       from_time = from_time.to_time if from_time.respond_to?(:to_time)
       to_time = to_time.to_time if to_time.respond_to?(:to_time)

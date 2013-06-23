@@ -3,10 +3,19 @@ require 'safe_yaml'
 require 'rbconfig'
 require 'shellwords'
 
-abort "Please set the CONFIG_FILE environment variable" if !ENV['CONFIG_FILE']
-CONFIG = YAML.load_file(ENV['CONFIG_FILE'], :safe => true)
 ROOT   = File.expand_path(File.dirname(__FILE__) + "/..")
+MYDIR  = File.expand_path(FIle.dirname(__FILE__))
 ENV['PATH'] = "#{ROOT}/bin:#{ENV['PATH']}"
+
+def find_config
+  candidates = [ENV['CONFIG_FILE'], "#{MYDIR}/config.yml", "/etc/apachai-hopachai.yml"]
+  candidates.compact.each do |filename|
+    if File.exist?(filename)
+      return filename
+    end
+  end
+  abort "No configuration file found. Please create /etc/apachai-hopachai.yml. See #{MYDIR}/config.yml.example for an example."
+end
 
 def ruby_exe
   if defined?(PhusionPassenger)
@@ -17,6 +26,8 @@ def ruby_exe
       RbConfig::CONFIG['EXEEXT']
   end
 end
+
+CONFIG = YAML.load_file(find_config, :safe => true)
 
 app = lambda do |env|
   input = JSON.parse(env['rack.input'].read)

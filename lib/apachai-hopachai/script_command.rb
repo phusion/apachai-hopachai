@@ -96,12 +96,6 @@ module ApachaiHopachai
       end
     end
 
-    def check_container_image_exists
-      if `docker images` !~ /apachai-hopachai/
-        abort "Container image apachai-hopachai does not exist. Please build it first with 'appa build'."
-      end
-    end
-
     def create_or_use_container
       if should_create_new_container?
         @logger.debug "Creating container"
