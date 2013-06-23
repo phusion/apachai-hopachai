@@ -6,6 +6,7 @@ require 'shellwords'
 abort "Please set the CONFIG_FILE environment variable" if !ENV['CONFIG_FILE']
 CONFIG = YAML.load_file(ENV['CONFIG_FILE'], :safe => true)
 ROOT   = File.expand_path(File.dirname(__FILE__) + "/..")
+ENV['PATH'] = "#{ROOT}/bin:#{ENV['PATH']}"
 
 def ruby_exe
   if defined?(PhusionPassenger)
@@ -18,13 +19,18 @@ def ruby_exe
 end
 
 app = lambda do |env|
-  input      = JSON.parse(env['rack.input'].read)
-  time_str   = Time.now.strftime("%Y-%m-%d-%H:%M:%S")
+  input = JSON.parse(env['rack.input'].read)
 
-  command = Shellwords.join([ruby_exe, "appa", "prepare",
-    input['repository']['url'], input['after'],
-    "--output-dir", CONFIG['queue_dir']])
-  IO.pipe("at now", "w") do |io|
+  command = Shellwords.join([
+    ruby_exe, "-S", "appa", "prepare",
+    input['repository']['url'],
+    input['after'],
+    "--output-dir", CONFIG['queue_dir'],
+    "--repo-name", input['repository']['name'],
+    "--before-sha", input['before']
+  ])
+puts command
+  IO.popen("at now", "w") do |io|
     io.puts command
   end
 
