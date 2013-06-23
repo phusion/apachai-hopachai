@@ -1,3 +1,4 @@
+# encoding: utf-8
 module ApachaiHopachai
   class BuildImageCommand < Command
     def self.description

@@ -1,3 +1,5 @@
+# encoding: utf-8
+
 APACHAI_HOPACHAI_FILES = [
   "*.md",
   "*.gemspec",

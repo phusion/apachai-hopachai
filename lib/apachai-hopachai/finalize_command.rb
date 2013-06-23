@@ -1,3 +1,4 @@
+# encoding: utf-8
 require 'apachai-hopachai/command_utils'
 
 module ApachaiHopachai
@@ -128,13 +129,13 @@ module ApachaiHopachai
         log = File.open("#{job[:path]}/output.log", "rb") { |f| f.read }
         html_log = StringIO.new
         ANSI2HTML::Main.new(log, html_log)
-        job[:html_log] = html_log.string
+        job[:html_log] = html_log.string.force_encoding('utf-8')
       end
 
-      template = ERB.new(File.read("#{RESOURCES_DIR}/report.html.erb"))
-      @report  = template.result(binding)
+      template = ERB.new(File.open("#{RESOURCES_DIR}/report.html.erb", "r") { |f| f.read })
+      @report  = template.result(binding).force_encoding('binary')
       @logger.info "Saving report to #{report_filename}"
-      File.open(report_filename, "w") do |f|
+      File.open(report_filename, "wb") do |f|
         f.write(@report)
       end
     end

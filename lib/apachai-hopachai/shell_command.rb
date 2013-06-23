@@ -1,10 +1,11 @@
+# encoding: utf-8
 require 'apachai-hopachai/command_utils'
 require 'optparse'
 
 module ApachaiHopachai
   class ShellCommand < Command
     include CommandUtils
-    
+
     def self.description
       "Run a shell inside a container"
     end

@@ -1,3 +1,4 @@
+# encoding: utf-8
 require 'apachai-hopachai/command_utils'
 require 'apachai-hopachai/jobset_utils'
 

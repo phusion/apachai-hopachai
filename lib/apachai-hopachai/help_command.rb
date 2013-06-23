@@ -1,3 +1,5 @@
+# encoding: utf-8
+
 module ApachaiHopachai
   class HelpCommand < Command
     def self.description

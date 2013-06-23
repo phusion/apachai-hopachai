@@ -75,6 +75,9 @@ Create a Runit service for the Apachai Hopachai daemon:
     #!/bin/bash
     EMAIL=me@myserver.com
     EMAIL_FROM=me@myserver.com
+    export LANGUAGE=en_US.UTF-8
+    export LANG=en_US.UTF-8
+    export LC_ALL=en_US.UTF-8
     cd /var/lib/appa-daemon
     exec chpst -u appa-daemon nice ruby1.9.1 -S appa daemon \
       --log-file /var/log/appa-daemon.log \
