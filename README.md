@@ -91,8 +91,8 @@ Runit will automatically start the daemon. Be sure to customize the `EMAIL` and 
 Install the gem bundle for the webhook server:
 
     cd /opt/appa-webapp
-    sudo -u appa-daemon mkdir -p .bundle
-    sudo -u appa-daemon chown -R appa-daemon:appa-daemon .bundle
+    sudo mkdir -p .bundle
+    sudo chown -R appa-daemon:appa-daemon .bundle
     sudo -u appa-daemon bundle install --deployment --without=development --path=/var/lib/appa-daemon
 
 Next, setup a virtual host entry for Phusion Passenger + Nginx to serve the webhook server:
