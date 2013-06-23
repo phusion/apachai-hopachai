@@ -153,7 +153,7 @@ module ApachaiHopachai
         mail[:to]   = @options[:email]
         mail[:subject] = subject
         mail[:body] = text_body
-        mail.add_file :filename => 'report.html', :content => @report
+        mail.add_file :filename => 'report-download-me-and-open-in-browser.html', :content => @report
         mail.delivery_method :sendmail
         mail.deliver
       end

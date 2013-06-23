@@ -43,6 +43,24 @@ module ApachaiHopachai
       end
     end
 
+    def create_pid_file(logger, filename)
+      logger.info("Creating PID file: #{filename}")
+      if File.exist?(filename)
+        abort "PID file already exists! Exiting!"
+      else
+        File.open(filename, "w") do |f|
+          f.puts Process.pid
+        end
+      end
+    end
+
+    def destroy_pid_file(logger, filename)
+      if File.exist?(filename)
+        logger.info("Deleting PID file: #{filename}")
+        File.unlink(filename)
+      end
+    end
+
     def maybe_set_log_file
       if @options[:log_file]
         set_log_file(@options[:log_file])
@@ -52,6 +70,18 @@ module ApachaiHopachai
     def maybe_daemonize
       if @options[:daemonize]
         daemonize(@logger)
+      end
+    end
+
+    def maybe_create_pid_file
+      if @options[:pid_file]
+        create_pid_file(@logger, @options[:pid_file])
+      end
+    end
+
+    def maybe_destroy_pid_file
+      if @options[:pid_file]
+        destroy_pid_file(@logger, @options[:pid_file])
       end
     end
 

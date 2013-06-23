@@ -23,15 +23,20 @@ module ApachaiHopachai
       parse_argv
       maybe_set_log_file
       maybe_daemonize
-      create_work_dir
+      maybe_create_pid_file
       begin
-        clone_repo
-        extract_repo_info
-        environments = infer_test_environments
-        create_jobs(environments)
-        notify_jobset_changed
+        create_work_dir
+        begin
+          clone_repo
+          extract_repo_info
+          environments = infer_test_environments
+          create_jobs(environments)
+          notify_jobset_changed
+        ensure
+          destroy_work_dir
+        end
       ensure
-        destroy_work_dir
+        maybe_destroy_pid_file
       end
     end
 
@@ -66,6 +71,9 @@ module ApachaiHopachai
         end
         opts.on("--daemonize", "-d", "Daemonize into background") do
           @options[:daemonize] = true
+        end
+        opts.on("--pid-file FILENAME", String, "Write PID to this file") do |val|
+          @options[:pid_file] = val
         end
         opts.on("--log-file FILENAME", "-l", String, "Log to the given file") do |val|
           @options[:log_file] = val

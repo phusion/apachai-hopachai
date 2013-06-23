@@ -34,25 +34,30 @@ module ApachaiHopachai
       parse_argv
       maybe_set_log_file
       maybe_daemonize
-      @logger.info "Apachai Hopachai daemon started"
-      begin_watching_queue_dir
+      maybe_create_pid_file
       begin
-        trap_signals
+        @logger.info "Apachai Hopachai daemon started"
+        begin_watching_queue_dir
         begin
-          @done = false
-          while !@done
-            while !@done && process_eligible_jobsets > 0
-              # Loop until there are no eligile jobsets.
+          trap_signals
+          begin
+            @done = false
+            while !@done
+              while !@done && process_eligible_jobsets > 0
+                # Loop until there are no eligile jobsets.
+              end
+              @done ||= wait_for_queue_dir_change
             end
-            @done ||= wait_for_queue_dir_change
+          ensure
+            untrap_signals
           end
         ensure
-          untrap_signals
+          end_watching_queue_dir
         end
+        @logger.info "Apachai Hopachai daemon exited"
       ensure
-        end_watching_queue_dir
+        maybe_destroy_pid_file
       end
-      @logger.info "Apachai Hopachai daemon exited"
     end
 
     private
@@ -84,6 +89,9 @@ module ApachaiHopachai
         end
         opts.on("--daemonize", "-d", "Daemonize into background") do
           @options[:daemonize] = true
+        end
+        opts.on("--pid-file FILENAME", String, "Write PID to this file") do |val|
+          @options[:pid_file] = val
         end
         opts.on("--log-file FILENAME", "-l", String, "Log to the given file") do |val|
           @options[:log_file] = val

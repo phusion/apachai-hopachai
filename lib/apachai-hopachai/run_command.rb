@@ -25,21 +25,26 @@ module ApachaiHopachai
       parse_argv
       maybe_set_log_file
       maybe_daemonize
-      read_and_verify_job
-      create_work_dir
+      maybe_create_pid_file
       begin
-        @job.set_processing
+        read_and_verify_job
+        create_work_dir
         begin
-          run_job
-          save_result
-          notify_jobset_changed
+          @job.set_processing
+          begin
+            run_job
+            save_result
+            notify_jobset_changed
+          ensure
+            @job.unset_processing
+          end
+        rescue StandardError, SignalException => e
+          exit(log_error(e))
         ensure
-          @job.unset_processing
+          destroy_work_dir
         end
-      rescue StandardError, SignalException => e
-        exit(log_error(e))
       ensure
-        destroy_work_dir
+        maybe_destroy_pid_file
       end
     end
 
@@ -61,6 +66,9 @@ module ApachaiHopachai
         end
         opts.on("--daemonize", "-d", "Daemonize into background") do
           @options[:daemonize] = true
+        end
+        opts.on("--pid-file FILENAME", String, "Write PID to this file") do |val|
+          @options[:pid_file] = val
         end
         opts.on("--log-file FILENAME", "-l", String, "Log to the given file") do |val|
           @options[:log_file] = val
