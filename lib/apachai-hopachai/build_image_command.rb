@@ -11,7 +11,7 @@ module ApachaiHopachai
 
     def start
       @logger.info("Starting 'docker build'")
-      system("docker build src") || exit(1)
+      system("docker", "build", RESOURCES_DIR) || exit(1)
       @logger.info("Committing image")
       container = `docker ps -a | sed -n 2p | awk '{ print $1 }'`.strip
       system("docker commit #{container} apachai-hopachai") || exit(1)
