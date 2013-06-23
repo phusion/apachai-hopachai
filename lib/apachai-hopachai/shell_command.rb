@@ -88,8 +88,10 @@ module ApachaiHopachai
         lines = `docker ps -a`.split("\n")
         lines.shift
         i = lines.find_index { |l| l.split(/ +/)[0] == last_container }
-        if i > 0
+        if i && i > 0
           lines[i - 1].split(/ +/)[0]
+        else
+          nil
         end
       else
         find_last_container
