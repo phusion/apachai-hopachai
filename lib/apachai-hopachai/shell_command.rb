@@ -1,7 +1,10 @@
+require 'apachai-hopachai/command_utils'
 require 'optparse'
 
 module ApachaiHopachai
   class ShellCommand < Command
+    include CommandUtils
+    
     def self.description
       "Run a shell inside a container"
     end
@@ -38,6 +41,9 @@ module ApachaiHopachai
         opts.separator "Options:"
         opts.on("--commit", "Commit changes to an image after the shell exits") do
           @options[:commit] = true
+        end
+        opts.on("--log-level LEVEL", String, "Set log level. One of: fatal,error,warn,info,debug") do |val|
+          set_log_level(val)
         end
         opts.on("--help", "-h", "Show help message") do
           @options[:help] = true
