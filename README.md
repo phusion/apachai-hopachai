@@ -6,7 +6,7 @@ Apachai Hopachai is a Continuous Integration (CI) system similar to [Travis CI](
 
 Apachai Hopachai is built with a Unix-like architecture, meaning that it consists of multiple small components, each doing only one thing, but doing it well. The entire system is simply a collection of these small components integrated with each other. This makes the system transparent and easy to debug.
 
-Apachai Hopachai is designed to run on one's own servers with minimal installation hassle. This allows it to be used with any privately hosted Git repository, not just those on Github.
+It is designed to run on one's own servers with minimal installation hassle. This allows it to be used with any privately hosted Git repository, not just those on Github.
 
 It is also designed to be extremely lightweight. It uses [Docker](http://www.docker.io/) for isolation, instead of using virtual machines. This minimizes resource usage. You can run everything on just a single machine.
 
