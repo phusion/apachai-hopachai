@@ -4,7 +4,7 @@ require 'rbconfig'
 require 'shellwords'
 
 ROOT   = File.expand_path(File.dirname(__FILE__) + "/..")
-MYDIR  = File.expand_path(FIle.dirname(__FILE__))
+MYDIR  = File.expand_path(File.dirname(__FILE__))
 ENV['PATH'] = "#{ROOT}/bin:#{ENV['PATH']}"
 
 def find_config
