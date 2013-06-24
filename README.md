@@ -63,10 +63,10 @@ Create a configuration file:
     EOF
     sudo chown appa-daemon:appa-daemon /etc/apachai-hopachai.yml
 
-Create a log file:
+Create a log and PID file:
 
-    sudo touch /var/log/appa-daemon.log
-    sudo chown appa-daemon:appa-daemon /var/log/appa-daemon.log
+    sudo touch /var/log/appa-daemon.log /var/run/appa-daemon.pid
+    sudo chown appa-daemon:appa-daemon /var/log/appa-daemon.log /var/run/appa-daemon.pid
 
 Create a Runit service for the Apachai Hopachai daemon:
 
@@ -81,6 +81,7 @@ Create a Runit service for the Apachai Hopachai daemon:
     cd /var/lib/appa-daemon
     exec chpst -u appa-daemon nice ruby1.9.1 -S appa daemon \
       --log-file /var/log/appa-daemon.log \
+      --pid-file /var/run/appa-daemon.pid \
       --email \$EMAIL \
       --email-from \$EMAIL_FROM \
       /var/lib/appa-daemon/queue
@@ -113,8 +114,8 @@ After restarting Nginx, your webhook is accessible through http://yourdomain.com
 
 ## Upgrading
 
- 1. Stop the daemon: `sudo sv down /etc/service/appa-daemon`
+ 1. Stop the daemon: `sudo sv stop /etc/service/appa-daemon`
  2. Install the latest version of Apachai Hopachai: `sudo gem install apachai-hopachai && sudo appa setup-symlinks && sudo appa build-image`
- 3. Start the daemon: `sudo sv up /etc/service/appa-daemon`
+ 3. Start the daemon: `sudo sv start /etc/service/appa-daemon`
  4. Reinstall the bundle for the webhook server, as described in "Setting up the webhook".
  5. Restart the webhook server: `sudo touch /opt/appa-webapp/tmp/restart.txt`, then restart Nginx.
