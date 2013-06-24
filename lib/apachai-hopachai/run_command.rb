@@ -65,6 +65,9 @@ module ApachaiHopachai
         opts.on("--dry-run-test", "Do everything except running the actual test") do |val|
           @options[:dry_run_test] = true
         end
+        opts.on("--docker-log-dir DIR", String, "Directory to store docker logs to. Default: current working dir") do |val|
+          @script_options[:docker_log_dir] = val
+        end
         opts.on("--daemonize", "-d", "Daemonize into background") do
           @options[:daemonize] = true
         end
@@ -85,6 +88,7 @@ module ApachaiHopachai
 
     def parse_argv
       @options = {}
+      @script_options = {}
       begin
         option_parser.parse!(@argv)
       rescue OptionParser::ParseError => e
@@ -147,7 +151,8 @@ module ApachaiHopachai
     end
 
     def run_job_script_and_extract_result
-      script_command = ScriptCommand.new([
+      args = options_to_args(@script_options)
+      script_command = ScriptCommand.new(args + [
         "--script=#{@job_path}",
         "--output=#{@work_dir}/output.tar.gz",
         "--",

@@ -63,6 +63,9 @@ module ApachaiHopachai
         opts.on("--output FILENAME", "-o", String, "The file to store the output to") do |val|
           @options[:output] = val
         end
+        opts.on("--docker-log-dir DIR", String, "Directory to store docker logs to. Default: current working dir") do |val|
+          @options[:docker_log_dir] = val
+        end
         opts.on("--log-level LEVEL", String, "Set log level. One of: fatal,error,warn,info,debug") do |val|
           set_log_level(val)
         end
@@ -73,7 +76,7 @@ module ApachaiHopachai
     end
 
     def parse_argv
-      @options = { :timeout => 60 * 30 }
+      @options = { :timeout => 60 * 30, :docker_log_dir => '.' }
       begin
         option_parser.parse!(@argv)
       rescue OptionParser::ParseError => e
@@ -228,8 +231,9 @@ module ApachaiHopachai
           e.backtrace.join("\n    "))
       end
 
-      system("docker logs #{@container} > appa-#{@container}.log")
-      @logger.error("Docker logs saved to appa-#{@container}.log")
+      logfile = "#{@options[:docker_log_dir]}/appa-#{@container}.log"
+      system("docker logs #{@container} > '#{logfile}'")
+      @logger.error("Docker logs saved to #{logfile}")
 
       if e.is_a?(Exited)
         e.exit_status

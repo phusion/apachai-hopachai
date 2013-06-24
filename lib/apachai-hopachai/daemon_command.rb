@@ -68,6 +68,7 @@ module ApachaiHopachai
     def option_parser
       require 'apachai-hopachai/finalize_command'
       @options = {}
+      @run_options = {}
       @finalize_options = FinalizeCommand.default_options.dup
       OptionParser.new do |opts|
         nl = "\n#{' ' * 37}"
@@ -88,7 +89,10 @@ module ApachaiHopachai
           @finalize_options[:email_subject] = val
         end
         opts.on("--dry-run-test", "Do everything except running the actual tests") do |val|
-          @options[:dry_run_test] = true
+          @run_options[:dry_run_test] = true
+        end
+        opts.on("--docker-log-dir DIR", String, "Directory to store docker logs to. Default: current working dir") do |val|
+          @run_options[:docker_log_dir] = val
         end
         opts.on("--daemonize", "-d", "Daemonize into background") do
           @options[:daemonize] = true
@@ -258,11 +262,7 @@ module ApachaiHopachai
     def finalize_jobset(jobset)
       @logger.info "Finalizing jobset #{jobset.path}"
       
-      args = []
-      @finalize_options.each_pair do |key, val|
-        args << "--#{key.to_s.gsub(/_/, '-')}"
-        args << val
-      end
+      args = options_to_args(@finalize_options)
       if @options[:report_dir]
         args << "--report"
         args << next_report_filename
@@ -286,8 +286,7 @@ module ApachaiHopachai
 
       jobset.jobs.each do |job|
         @logger.info "Processing job #{job.path}: #{job.info['env_name']}"
-        command = RunCommand.new([
-          @options[:dry_run_test] ? "--dry-run-test" : nil,
+        command = RunCommand.new(options_to_args(@run_options) + [
           "--",
           job.path
         ].compact)
