@@ -44,10 +44,30 @@ module ApachaiHopachai
       end
     end
 
+    def pid_file_exists_and_is_valid?(filename)
+      if File.exist?(filename)
+        pid = File.read(filename).to_i
+        if pid > 0
+          begin
+            Process.kill(0, pid)
+            true
+          rescue Errno::ESRCH
+            false
+          rescue SystemCallError => e
+            true
+          end
+        else
+          false
+        end
+      else
+        false
+      end
+    end
+
     def create_pid_file(logger, filename)
       logger.info("Creating PID file: #{filename}")
-      if File.exist?(filename)
-        abort "PID file already exists! Exiting!"
+      if pid_file_exists_and_is_valid?(filename)
+        abort "According to the PID file, another instance is already running. Exiting."
       else
         File.open(filename, "w") do |f|
           f.puts Process.pid
@@ -57,8 +77,12 @@ module ApachaiHopachai
 
     def destroy_pid_file(logger, filename)
       if File.exist?(filename)
-        logger.info("Deleting PID file: #{filename}")
-        File.unlink(filename)
+        # We empty the PID file instead of deleting it because
+        # the PID file may be in /var/run, and chmodded by the admin
+        # to be accessible by Apachai Hopachai. If we delete it
+        # then we cannot create it anymore on the next run.
+        logger.info("Emptying PID file: #{filename}")
+        File.open(filename, "w").close
       end
     end
 
