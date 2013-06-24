@@ -37,8 +37,9 @@ module ApachaiHopachai
     def start
       parse_argv
       read_and_verify_jobset
-      save_report
+      generate_report
       send_notification
+      save_report
     end
 
     private
@@ -124,7 +125,7 @@ module ApachaiHopachai
       File.exist?("#{job_path}/result.yml")
     end
 
-    def save_report
+    def generate_report
       @jobs.each do |job|
         log = File.open("#{job[:path]}/output.log", "rb") { |f| f.read }
         html_log = StringIO.new
@@ -134,10 +135,6 @@ module ApachaiHopachai
 
       template = ERB.new(File.open("#{RESOURCES_DIR}/report.html.erb", "r") { |f| f.read })
       @report  = template.result(binding).force_encoding('binary')
-      @logger.info "Saving report to #{report_filename}"
-      File.open(report_filename, "wb") do |f|
-        f.write(@report)
-      end
     end
 
     def send_notification
@@ -158,6 +155,14 @@ module ApachaiHopachai
         mail.delivery_method :sendmail
         mail.deliver
       end
+    end
+
+    def save_report
+      @logger.info "Saving report to #{report_filename}"
+      File.open(report_filename, "wb") do |f|
+        f.write(@report)
+      end
+      File.open("#{@jobset_path}/finalized", "w").close
     end
 
     def report_filename

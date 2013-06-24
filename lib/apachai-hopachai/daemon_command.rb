@@ -242,13 +242,38 @@ module ApachaiHopachai
 
       jobsets.each do |jobset|
         if jobset.processed?
-          delete_jobset(jobset)
+          if jobset.finalized?
+            finalize_jobset(jobset)
+          else
+            delete_jobset(jobset)
+          end
         else
           process_jobset(jobset)
         end
       end
 
       jobsets.size
+    end
+
+    def finalize_jobset(jobset)
+      @logger.info "Finalizing jobset #{jobset.path}"
+      
+      args = []
+      @finalize_options.each_pair do |key, val|
+        args << "--#{key.to_s.gsub(/_/, '-')}"
+        args << val
+      end
+      if @options[:report_dir]
+        args << "--report"
+        args << next_report_filename
+        args << "--format-report-filename"
+      end
+
+      command = FinalizeCommand.new(args + ["--", jobset.path])
+      command.logger = @logger
+      command.start
+
+      delete_jobset(jobset)
     end
 
     def delete_jobset(jobset)
@@ -270,22 +295,7 @@ module ApachaiHopachai
         command.start
       end
 
-      @logger.info "Finalizing jobset #{jobset.path}"
-      finalize_args = []
-      @finalize_options.each_pair do |key, val|
-        finalize_args << "--#{key.to_s.gsub(/_/, '-')}"
-        finalize_args << val
-      end
-      if @options[:report_dir]
-        finalize_args << "--report"
-        finalize_args << next_report_filename
-        finalize_args << "--format-report-filename"
-      end
-      command = FinalizeCommand.new([finalize_args, "--", jobset.path].flatten)
-      command.logger = @logger
-      command.start
-
-      delete_jobset(jobset)
+      finalize_jobset(jobset)
     end
 
     def next_report_filename

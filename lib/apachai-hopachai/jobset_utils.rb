@@ -40,6 +40,10 @@ module ApachaiHopachai
       def processed?
         jobs.all? { |job| job.processed? }
       end
+
+      def finalized?
+        File.exist?("#{@path}/finalized")
+      end
     end
 
     class Job
