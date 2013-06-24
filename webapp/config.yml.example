@@ -1,1 +1,1 @@
-queue_dir: /var/tmp
+queue_dir: /var/lib/appa-daemon/queue
