@@ -81,7 +81,7 @@ Create a Runit service for the Apachai Hopachai daemon:
     exec chpst -u appa-daemon nice ruby1.9.1 -S appa daemon \
       --log-file /var/log/appa-daemon/daemon.log \
       --pid-file /var/run/appa-daemon.pid \
-      --docker-logs /var/log/appa-daemon \
+      --docker-log-dir /var/log/appa-daemon \
       --email \$EMAIL \
       --email-from \$EMAIL_FROM \
       /var/lib/appa-daemon/queue
