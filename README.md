@@ -51,10 +51,10 @@ Create a user for the daemon to run as:
 
     sudo adduser appa-daemon
 
-Create a queue and log directory:
+Create a queue, log and PID directory:
 
-    sudo mkdir -p /var/lib/appa-daemon/queue /var/log/appa-daemon
-    sudo chown -R appa-daemon:appa-daemon /var/lib/appa-daemon /var/log/appa-daemon
+    sudo mkdir -p /var/lib/appa-daemon/queue /var/log/appa-daemon /var/run/appa-daemon
+    sudo chown -R appa-daemon:appa-daemon /var/lib/appa-daemon /var/log/appa-daemon /var/run/appa-daemon
 
 Create a configuration file:
 
@@ -62,11 +62,6 @@ Create a configuration file:
     queue_dir: /var/lib/appa-daemon/queue
     EOF
     sudo chown appa-daemon:appa-daemon /etc/apachai-hopachai.yml
-
-Create a PID file:
-
-    sudo touch /var/run/appa-daemon.pid
-    sudo chown appa-daemon:appa-daemon /var/run/appa-daemon.pid
 
 Create a Runit service for the Apachai Hopachai daemon:
 
@@ -80,7 +75,7 @@ Create a Runit service for the Apachai Hopachai daemon:
     export LC_ALL=en_US.UTF-8
     exec chpst -u appa-daemon nice ruby1.9.1 -S appa daemon \
       --log-file /var/log/appa-daemon/daemon.log \
-      --pid-file /var/run/appa-daemon.pid \
+      --pid-file /var/run/appa-daemon/daemon.pid \
       --docker-log-dir /var/log/appa-daemon \
       --email \$EMAIL \
       --email-from \$EMAIL_FROM \

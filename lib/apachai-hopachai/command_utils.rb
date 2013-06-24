@@ -77,12 +77,8 @@ module ApachaiHopachai
 
     def destroy_pid_file(logger, filename)
       if File.exist?(filename)
-        # We empty the PID file instead of deleting it because
-        # the PID file may be in /var/run, and chmodded by the admin
-        # to be accessible by Apachai Hopachai. If we delete it
-        # then we cannot create it anymore on the next run.
-        logger.info("Emptying PID file: #{filename}")
-        File.open(filename, "w").close
+        logger.info("Deleting PID file: #{filename}")
+        File.unlink(filename)
       end
     end
 
