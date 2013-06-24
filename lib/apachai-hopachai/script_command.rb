@@ -245,6 +245,10 @@ module ApachaiHopachai
     def wait_for_socket_and_handshake(host, port)
       while true
         sleep 0.1
+
+        if `docker inspect #{@container}` !~ /"Running": true/
+          abort "Container script encountered an error"
+        end
         
         begin
           socket = TCPSocket.new(host, port)
