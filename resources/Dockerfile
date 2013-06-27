@@ -1,10 +1,15 @@
 FROM base
 MAINTAINER Hongli Lai <hongli@phusion.nl>
 
+# https://github.com/dotcloud/docker/issues/1024
+RUN dpkg-divert --local --rename --add /sbin/initctl
+RUN ln -s /bin/true /sbin/initctl
+
 RUN apt-get update
 RUN apt-get install -y build-essential nano curl git python
 RUN apt-get install -y apache2-mpm-worker apache2-threaded-dev libcurl4-openssl-dev
 RUN apt-get clean
+
 RUN adduser --disabled-password --gecos "Apachai Hopachai" appa
 RUN usermod -a -G sudo appa
 RUN echo appa:appa | chpasswd
