@@ -29,15 +29,17 @@ def run_script(config)
 end
 
 def start
-	ENV['TERM'] = 'xterm-256color'
-	ENV['LANG'] = 'en_US.UTF-8'
-	ENV['LC_ALL'] = 'en_US.UTF-8'
 	config = YAML.load_file('travis.yml')
 	Dir.chdir("app")
 	run_command_list(config['before_install'])
 	run_script(config)
 	log "Apachai Hopachai finished."
 end
+
+ENV['TERM'] = 'xterm-256color'
+ENV['LANG'] = 'en_US.UTF-8'
+ENV['LC_ALL'] = 'en_US.UTF-8'
+ENV['RUBYOPT'] = '-Eutf-8'
 
 if ARGV[0] == "--dry-run"
 	puts "--dry-run given, stopping."
