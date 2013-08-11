@@ -67,7 +67,7 @@ module ApachaiHopachai
 
     def option_parser
       require 'apachai-hopachai/finalize_command'
-      @options = {}
+      @options = { :bind_mounts => {} }
       @run_options = {}
       @finalize_options = FinalizeCommand.default_options.dup
       OptionParser.new do |opts|
@@ -93,6 +93,13 @@ module ApachaiHopachai
         end
         opts.on("--docker-log-dir DIR", String, "Directory to store docker logs to. Default: current working dir") do |val|
           @run_options[:docker_log_dir] = val
+        end
+        opts.on("--bind-mount HOST_PATH:CONTAINER_PATH", "Bind mount a directory inside the container") do |val|
+          host_path, container_path = val.split(':', 2)
+          if !container_path
+            abort "Invalid value for --bind-mount"
+          end
+          @options[:bind_mounts][host_path] = container_path
         end
         opts.on("--daemonize", "-d", "Daemonize into background") do
           @options[:daemonize] = true
@@ -286,10 +293,13 @@ module ApachaiHopachai
 
       jobset.jobs.each do |job|
         @logger.info "Processing job #{job.path}: #{job.info['env_name']}"
-        command = RunCommand.new(options_to_args(@run_options) + [
-          "--",
-          job.path
-        ].compact)
+        args = options_to_args(@run_options)
+        @options[:bind_mounts].each_pair do |host_path, container_path|
+          args << "--bind-mount=#{host_path}:#{container_path}"
+        end
+        args << "--"
+        args << job.path
+        command = RunCommand.new(args.compact)
         command.logger = @logger
         command.start
       end

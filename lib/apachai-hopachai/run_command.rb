@@ -68,6 +68,16 @@ module ApachaiHopachai
         opts.on("--docker-log-dir DIR", String, "Directory to store docker logs to. Default: current working dir") do |val|
           @script_options[:docker_log_dir] = val
         end
+        opts.on("--bind-mount HOST_PATH:CONTAINER_PATH", "Bind mount a directory inside the container") do |val|
+          host_path, container_path = val.split(':', 2)
+          if !container_path
+            abort "Invalid value for --bind-mount"
+          end
+          @options[:bind_mounts][host_path] = container_path
+        end
+        opts.on("--rerun", "Rerun job if job has already been processed") do
+          @options[:rerun] = true
+        end
         opts.on("--daemonize", "-d", "Daemonize into background") do
           @options[:daemonize] = true
         end
@@ -87,7 +97,7 @@ module ApachaiHopachai
     end
 
     def parse_argv
-      @options = {}
+      @options = { :bind_mounts => {} }
       @script_options = {}
       begin
         option_parser.parse!(@argv)
@@ -121,7 +131,9 @@ module ApachaiHopachai
       @job = Job.new(@job_path)
       abort "The given path is not a valid job" if !@job.valid?
       abort "Job is already being processed" if @job.processing?
-      abort "Job has already been processed" if @job.processed?
+      if @job.processed? && !@options[:rerun]
+        abort "Job has already been processed. Use --rerun if you want to rerun this job"
+      end
 
       @jobset = Jobset.new(jobset_path)
       abort "The given jobset is not complete" if !@jobset.complete?
@@ -152,12 +164,14 @@ module ApachaiHopachai
 
     def run_job_script_and_extract_result
       args = options_to_args(@script_options)
-      script_command = ScriptCommand.new(args + [
-        "--script=#{@job_path}",
-        "--output=#{@work_dir}/output.tar.gz",
-        "--",
-        @options[:dry_run_test] ? "--dry-run" : nil
-      ].compact)
+      args << "--script=#{@job_path}"
+      args << "--output=#{@work_dir}/output.tar.gz"
+      @options[:bind_mounts].each_pair do |host_path, container_path|
+        args << "--bind-mount=#{host_path}:#{container_path}"
+      end
+      args << "--"
+      args << (@options[:dry_run_test] ? "--dry-run" : nil)
+      script_command = ScriptCommand.new(args.compact)
       script_command.logger = @logger
       # Let any exceptions propagate so that bugs in Apachai Hopachai trigger
       # a stack trace. If the test inside the container fails, no exception

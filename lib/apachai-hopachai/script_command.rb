@@ -63,6 +63,13 @@ module ApachaiHopachai
         opts.on("--output FILENAME", "-o", String, "The file to store the output to") do |val|
           @options[:output] = val
         end
+        opts.on("--bind-mount HOST_PATH:CONTAINER_PATH", "Bind mount a directory inside the container") do |val|
+          host_path, container_path = val.split(':', 2)
+          if !container_path
+            abort "Invalid value for --bind-mount"
+          end
+          @options[:bind_mounts][host_path] = container_path
+        end
         opts.on("--docker-log-dir DIR", String, "Directory to store docker logs to. Default: current working dir") do |val|
           @options[:docker_log_dir] = val
         end
@@ -76,7 +83,7 @@ module ApachaiHopachai
     end
 
     def parse_argv
-      @options = { :timeout => 60 * 30, :docker_log_dir => '.' }
+      @options = { :timeout => 60 * 30, :docker_log_dir => '.', :bind_mounts => {} }
       begin
         option_parser.parse!(@argv)
       rescue OptionParser::ParseError => e
@@ -102,8 +109,12 @@ module ApachaiHopachai
 
     def create_or_use_container
       if should_create_new_container?
-        command = "docker run -d -h=apachai-hopachai -p 3002 -p 3003 apachai-hopachai " +
-          "sudo -u appa -H /usr/local/rvm/bin/rvm-exec 1.9.3 ruby /bootstrap.rb"
+        command = "docker run -d -h=apachai-hopachai -p 3002 -p 3003 "
+        @options[:bind_mounts].each_pair do |host_path, container_path|
+          command << "-v '#{host_path}:#{container_path}' "
+        end
+        command << "apachai-hopachai "
+        command << "sudo -u appa -H /usr/local/rvm/bin/rvm-exec 1.9.3 ruby /bootstrap.rb"
         @logger.debug "Creating container: #{command}"
         @container = `#{command}`.strip
         @logger.info "Created container with ID #{@container}"

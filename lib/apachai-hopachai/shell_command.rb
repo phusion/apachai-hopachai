@@ -43,6 +43,13 @@ module ApachaiHopachai
         opts.on("--commit", "Commit changes to an image after the shell exits") do
           @options[:commit] = true
         end
+        opts.on("--bind-mount HOST_PATH:CONTAINER_PATH", "Bind mount a directory inside the container") do |val|
+          host_path, container_path = val.split(':', 2)
+          if !container_path
+            abort "Invalid value for --bind-mount"
+          end
+          @options[:bind_mounts][host_path] = container_path
+        end
         opts.on("--log-level LEVEL", String, "Set log level. One of: fatal,error,warn,info,debug") do |val|
           set_log_level(val)
         end
@@ -53,7 +60,7 @@ module ApachaiHopachai
     end
 
     def parse_argv
-      @options = {}
+      @options = { :bind_mounts => {} }
       begin
         option_parser.parse!(@argv)
       rescue OptionParser::ParseError => e
@@ -82,8 +89,11 @@ module ApachaiHopachai
     end
 
     def run_shell
-      command = "docker run -t -i -h=apachai-hopachai -p 3002 -p 3003 " +
-        "apachai-hopachai sudo -u appa -H /bin/bash -l"
+      command = "docker run -t -i -h=apachai-hopachai -p 3002 -p 3003 "
+      @options[:bind_mounts].each_pair do |host_path, container_path|
+        command << "-v '#{host_path}:#{container_path}' "
+      end
+      command << "apachai-hopachai sudo -u appa -H /bin/bash -l"
       @logger.info "Running: #{command}"
       result = system(command)
       exit 1 if !result
