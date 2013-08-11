@@ -63,6 +63,9 @@ module ApachaiHopachai
         opts.on("--output FILENAME", "-o", String, "The file to store the output to") do |val|
           @options[:output] = val
         end
+        opts.on("--sudo", "Call Docker using sudo") do |val|
+          @options[:sudo] = true
+        end
         opts.on("--bind-mount HOST_PATH:CONTAINER_PATH", "Bind mount a directory inside the container") do |val|
           host_path, container_path = val.split(':', 2)
           if !container_path
@@ -109,7 +112,7 @@ module ApachaiHopachai
 
     def create_or_use_container
       if should_create_new_container?
-        command = "docker run -d -h=apachai-hopachai -p 3002 -p 3003 "
+        command = "#{docker} run -d -h=apachai-hopachai -p 3002 -p 3003 "
         @options[:bind_mounts].each_pair do |host_path, container_path|
           command << "-v '#{host_path}:#{container_path}' "
         end
@@ -127,8 +130,8 @@ module ApachaiHopachai
     def maybe_destroy_container
       if should_create_new_container?
         @logger.info "Destroying container"
-        system("docker kill #{@container} >/dev/null")
-        system("docker rm #{@container} >/dev/null")
+        system("#{docker} kill #{@container} >/dev/null")
+        system("#{docker} rm #{@container} >/dev/null")
       end
     end
 
@@ -139,7 +142,7 @@ module ApachaiHopachai
     def wait_for_connection
       sleep 0.1
       @logger.debug("Querying host port for Docker container port 3002")
-      @main_port = `docker port #{@container} 3002`.to_i
+      @main_port = `#{docker} port #{@container} 3002`.to_i
       abort "Cannot query host port for Docker container port 3002" if @main_port == 0
       @logger.debug("Host port for Docker container port 3002 is #{@main_port}")
       @logger.info("Connecting to container")
@@ -148,6 +151,14 @@ module ApachaiHopachai
 
     def close_connection
       @main_socket.close
+    end
+
+    def docker
+      if @options[:sudo]
+        "sudo docker"
+      else
+        "docker"
+      end
     end
 
     def send_input

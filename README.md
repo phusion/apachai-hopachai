@@ -82,6 +82,7 @@ Create a Runit service for the Apachai Hopachai daemon:
       --log-file /var/log/appa-daemon/daemon.log \
       --pid-file /var/run/appa-daemon/daemon.pid \
       --docker-log-dir /var/log/appa-daemon \
+      --sudo \
       --email \$EMAIL \
       --email-from \$EMAIL_FROM \
       /var/lib/appa-daemon/queue

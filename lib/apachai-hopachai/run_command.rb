@@ -65,6 +65,9 @@ module ApachaiHopachai
         opts.on("--dry-run-test", "Do everything except running the actual test") do |val|
           @options[:dry_run_test] = true
         end
+        opts.on("--sudo", "Call Docker using sudo") do |val|
+          @script_options[:sudo] = true
+        end
         opts.on("--docker-log-dir DIR", String, "Directory to store docker logs to. Default: current working dir") do |val|
           @script_options[:docker_log_dir] = val
         end
