@@ -80,6 +80,10 @@ module ApachaiHopachai
       def unset_processing
         File.unlink("#{@path}/processing")
       end
+
+      def <=>(other)
+        @info['id'] <=> other.info['id']
+      end
     end
 
     def self.require_libs

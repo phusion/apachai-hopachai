@@ -119,6 +119,7 @@ module ApachaiHopachai
           abort "job #{job_path} has not yet finished processing"
         end
       end
+      @jobs.sort!
     end
 
     def job_processed?(job_path)
