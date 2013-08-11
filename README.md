@@ -63,6 +63,11 @@ Create a configuration file:
     EOF
     sudo chown appa-daemon:appa-daemon /etc/apachai-hopachai.yml
 
+Create a sudoers file:
+
+    echo "appa-daemon ALL=(root)NOPASSWD:/usr/bin/docker" | sudo tee /etc/sudoers.d/appa-daemon
+    sudo chmod 440 /etc/sudoers.d/appa-daemon
+
 Create a Runit service for the Apachai Hopachai daemon:
 
     sudo mkdir -p /etc/service/appa-daemon
