@@ -191,7 +191,7 @@ module ApachaiHopachai
 
     def wait_for_output
       if !select([@main_socket], nil, nil, @options[:timeout])
-        system("docker kill #{@container} >/dev/null")
+        system("#{docker} kill #{@container} >/dev/null")
         abort "Timeout of #{@options[:timeout]} reached!"
       end
     end
@@ -221,7 +221,7 @@ module ApachaiHopachai
 
     def begin_watching_status
       @logger.debug("Querying host port for Docker container port 3003")
-      @status_port = `docker port #{@container} 3003`.to_i
+      @status_port = `#{docker} port #{@container} 3003`.to_i
       abort "Cannot query host port for Docker container port 3003" if @status_port == 0
       @logger.debug("Host port for Docker container port 3003 is #{@status_port}")
       @logger.info("Connecting to container status server")
@@ -254,7 +254,7 @@ module ApachaiHopachai
       end
 
       logfile = "#{@options[:docker_log_dir]}/appa-#{@container}.log"
-      system("docker logs #{@container} > '#{logfile}'")
+      system("#{docker} logs #{@container} > '#{logfile}'")
       @logger.error("Docker logs saved to #{logfile}")
 
       if e.is_a?(Exited)
@@ -268,7 +268,7 @@ module ApachaiHopachai
       while true
         sleep 0.1
 
-        if `docker inspect #{@container}` !~ /"Running": true/
+        if `#{docker} inspect #{@container}` !~ /"Running": true/
           abort "Container script encountered an error"
         end
         
