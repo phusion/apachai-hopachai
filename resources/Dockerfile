@@ -12,7 +12,7 @@ RUN apt-get install -y build-essential nano curl git python
 RUN apt-get install -y apache2-mpm-worker apache2-threaded-dev libcurl4-openssl-dev
 RUN apt-get clean
 
-RUN adduser --disabled-password --gecos "Apachai Hopachai" appa
+RUN adduser --uid 1000 --gid 1000 --disabled-password --gecos "Apachai Hopachai" appa
 RUN usermod -a -G sudo appa
 RUN echo appa:appa | chpasswd
 RUN sed -i -E 's/^%sudo\tALL=\(ALL:ALL\) ALL$/%sudo  ALL=(ALL:ALL) NOPASSWD: ALL/' /etc/sudoers
