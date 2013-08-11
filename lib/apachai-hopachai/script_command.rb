@@ -21,7 +21,7 @@ module ApachaiHopachai
 
     def start
       parse_argv
-      check_container_image_exists
+      check_container_image_exists(@options[:sudo])
       create_or_use_container
       begin
         wait_for_connection

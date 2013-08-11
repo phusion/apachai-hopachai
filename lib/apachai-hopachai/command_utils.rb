@@ -144,8 +144,13 @@ module ApachaiHopachai
       end
     end
 
-    def check_container_image_exists
-      if `docker images` !~ /apachai-hopachai/
+    def check_container_image_exists(sudo = false)
+      if sudo
+        docker = "sudo docker"
+      else
+        docker = "docker"
+      end
+      if `#{docker} images` !~ /apachai-hopachai/
         abort "Container image 'apachai-hopachai' does not exist. Please build it first with 'appa build-image'."
       end
     end

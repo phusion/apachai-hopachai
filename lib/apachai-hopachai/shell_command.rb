@@ -76,12 +76,6 @@ module ApachaiHopachai
       end
     end
 
-    def check_container_image_exists
-      if `docker images` !~ /apachai-hopachai/
-        abort "Container image apachai-hopachai does not exist. Please build it first with 'appa build'."
-      end
-    end
-
     def find_last_container
       lines = `docker ps -a`.split("\n")
       result = lines[1].to_s.split(/ +/)[0].to_s
