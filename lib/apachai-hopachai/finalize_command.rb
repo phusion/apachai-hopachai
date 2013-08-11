@@ -119,7 +119,7 @@ module ApachaiHopachai
           abort "job #{job_path} has not yet finished processing"
         end
       end
-      @jobs.sort!
+      @jobs.sort! { |a, b| a[:info]['id'] <=> b[:info]['id'] }
     end
 
     def job_processed?(job_path)
