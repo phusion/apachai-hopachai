@@ -116,7 +116,8 @@ module ApachaiHopachai
         @options[:bind_mounts].each_pair do |host_path, container_path|
           command << "-v '#{host_path}:#{container_path}' "
         end
-        command << "apachai-hopachai "
+        command << "-v '#{ApachaiHopachai::CONTAINER_UTILS_DIR}:/container_utils' "
+        command << "apachai-hopachai /usr/local/rvm/bin/rvm-exec ruby-2.0.0 ruby /container_utils/supervisor.rb "
         command << "sudo -u appa -H /usr/local/rvm/bin/rvm-exec 1.9.3 ruby /bootstrap.rb"
         @logger.debug "Creating container: #{command}"
         @container = `#{command}`.strip

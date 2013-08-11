@@ -87,7 +87,9 @@ module ApachaiHopachai
       @options[:bind_mounts].each_pair do |host_path, container_path|
         command << "-v '#{host_path}:#{container_path}' "
       end
-      command << "apachai-hopachai sudo -u appa -H /bin/bash -l"
+      command << "-v '#{ApachaiHopachai::CONTAINER_UTILS_DIR}:/container_utils' "
+      command << "apachai-hopachai /usr/local/rvm/bin/rvm-exec ruby-2.0.0 ruby /container_utils/supervisor.rb "
+      command << "sudo -u appa -H /bin/bash -l"
       @logger.info "Running: #{command}"
       result = system(command)
       exit 1 if !result

@@ -13,11 +13,12 @@ module ApachaiHopachai
     end
   end
 
-  NATIVELY_PACKAGED = false
-  SOURCE_ROOT   = File.expand_path(File.dirname(__FILE__) + "/../..")
-  RESOURCES_DIR = "#{SOURCE_ROOT}/resources"
-  WEBAPP_DIR    = "#{SOURCE_ROOT}/webapp"
-  WEBAPP_SYMLINK = "/opt/appa-webapp"
+  NATIVELY_PACKAGED   = false
+  SOURCE_ROOT         = File.expand_path(File.dirname(__FILE__) + "/../..")
+  RESOURCES_DIR       = "#{SOURCE_ROOT}/resources"
+  CONTAINER_UTILS_DIR = "#{SOURCE_ROOT}/container_utils"
+  WEBAPP_DIR          = "#{SOURCE_ROOT}/webapp"
+  WEBAPP_SYMLINK      = "/opt/appa-webapp"
 
   COMMANDS = {
     'build-image'    => 'BuildImageCommand',
