@@ -1,4 +1,4 @@
-FROM base
+FROM ubuntu:12.04
 MAINTAINER Hongli Lai <hongli@phusion.nl>
 
 # https://github.com/dotcloud/docker/issues/1024
