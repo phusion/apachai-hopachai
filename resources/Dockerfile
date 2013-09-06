@@ -8,10 +8,11 @@ RUN ln -s /bin/true /sbin/initctl
 RUN echo force-unsafe-io > /etc/dpkg/dpkg.cfg.d/02apt-speedup
 
 RUN apt-get update
-RUN apt-get install -y build-essential nano curl git python
+RUN apt-get install -y build-essential nano curl git python sudo
 RUN apt-get install -y apache2-mpm-worker apache2-threaded-dev libcurl4-openssl-dev
 RUN apt-get clean
 
+RUN addgroup --gid 1000 appa
 RUN adduser --uid 1000 --gid 1000 --disabled-password --gecos "Apachai Hopachai" appa
 RUN usermod -a -G sudo appa
 RUN echo appa:appa | chpasswd
