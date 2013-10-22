@@ -78,6 +78,8 @@ Create a Runit service for the Apachai Hopachai daemon:
     export LANGUAGE=en_US.UTF-8
     export LANG=en_US.UTF-8
     export LC_ALL=en_US.UTF-8
+    mkdir -p /var/run/appa-daemon
+    chown -R appa-daemon:appa-daemon /var/run/appa-daemon
     exec chpst -u appa-daemon nice ruby1.9.1 -S appa daemon \
       --log-file /var/log/appa-daemon/daemon.log \
       --pid-file /var/run/appa-daemon/daemon.pid \
