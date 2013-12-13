@@ -143,7 +143,7 @@ module ApachaiHopachai
     def wait_for_connection
       sleep 0.1
       @logger.debug("Querying host port for Docker container port 3002")
-      @main_port = `#{docker} port #{@container} 3002`.to_i
+      @main_port = `#{docker} port #{@container} 3002`.split(':')[1].to_i
       abort "Cannot query host port for Docker container port 3002" if @main_port == 0
       @logger.debug("Host port for Docker container port 3002 is #{@main_port}")
       @logger.info("Connecting to container")
@@ -222,7 +222,7 @@ module ApachaiHopachai
 
     def begin_watching_status
       @logger.debug("Querying host port for Docker container port 3003")
-      @status_port = `#{docker} port #{@container} 3003`.to_i
+      @status_port = `#{docker} port #{@container} 3003`.split(':')[1].to_i
       abort "Cannot query host port for Docker container port 3003" if @status_port == 0
       @logger.debug("Host port for Docker container port 3003 is #{@status_port}")
       @logger.info("Connecting to container status server")
