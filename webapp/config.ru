@@ -19,7 +19,11 @@ end
 
 def ruby_exe
   if defined?(PhusionPassenger)
-    require 'phusion_passenger/platform_info/ruby'
+    if PhusionPassenger.respond_to?(:require_passenger_lib)
+      PhusionPassenger.require_passenger_lib 'platform_info/ruby'
+    else
+      require 'phusion_passenger/platform_info/ruby'
+    end
     PhusionPassenger::PlatformInfo.ruby_command
   else
     RbConfig::CONFIG['bindir'] + '/' + RbConfig::CONFIG['RUBY_INSTALL_NAME'] +
