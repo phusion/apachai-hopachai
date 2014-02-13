@@ -108,10 +108,6 @@ module ApachaiHopachai
       end
     end
 
-    def need_checking_for_system_symlinks?
-      !NATIVELY_PACKAGED
-    end
-
     def check_container_image_exists(sudo = false)
       if sudo
         docker = "sudo docker"

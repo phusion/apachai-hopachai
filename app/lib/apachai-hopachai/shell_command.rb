@@ -89,7 +89,7 @@ module ApachaiHopachai
       @options[:bind_mounts].each_pair do |host_path, container_path|
         command << " -v #{Shellwords.escape host_path}:#{Shellwords.escape container_path}"
       end
-      command << " -v #{Shellwords.escape  ApachaiHopachai::SOURCE_ROOT}:/appa:ro"
+      command << " -v #{Shellwords.escape  ApachaiHopachai::APP_ROOT}:/appa:ro"
       command << " #{SANDBOX_IMAGE_NAME} #{SUPERVISOR_COMMAND}"
       command << " sudo -u appa -H /bin/bash -l"
       @logger.info "Running: #{command}"

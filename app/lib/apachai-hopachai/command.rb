@@ -13,10 +13,6 @@ module ApachaiHopachai
     end
   end
 
-  NATIVELY_PACKAGED   = false
-  SOURCE_ROOT         = File.expand_path(File.dirname(__FILE__) + "/../..")
-  RESOURCES_DIR       = "#{SOURCE_ROOT}/resources"
-
   COMMANDS = {
     'prepare'  => 'PrepareCommand',
     'run'      => 'RunCommand',

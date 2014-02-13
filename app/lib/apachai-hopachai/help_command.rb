@@ -34,6 +34,8 @@ module ApachaiHopachai
           command_name,
           ApachaiHopachai.get_class_for_command(command_name).description
       end
+      puts
+      puts "Run `appa help <COMMAND>` to learn more about a command."
     end
 
     def show_help_for_command(command_name)

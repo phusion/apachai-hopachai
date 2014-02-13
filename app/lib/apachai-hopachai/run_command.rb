@@ -56,12 +56,10 @@ module ApachaiHopachai
       OptionParser.new do |opts|
         nl = "\n#{' ' * 37}"
         opts.banner = "Usage: appa run [OPTIONS] JOB_PATH"
+        opts.separator "Run a specific test job."
         opts.separator ""
-        
+
         opts.separator "Options:"
-        opts.on("--limit N", Integer, "Limit the number of environments to test. Default: test all environments") do |val|
-          @options[:limit] = val
-        end
         opts.on("--dry-run-test", "Do everything except running the actual test") do |val|
           @options[:dry_run_test] = true
         end
@@ -171,7 +169,7 @@ module ApachaiHopachai
       @options[:bind_mounts].each_pair do |host_path, container_path|
         command << " -v #{Shellwords.escape host_path}:#{Shellwords.escape container_path} "
       end
-      command << " -v #{Shellwords.escape ApachaiHopachai::SOURCE_ROOT}:/appa:ro"
+      command << " -v #{Shellwords.escape ApachaiHopachai::APP_ROOT}:/appa:ro"
       command << " -v #{Shellwords.escape @work_dir}/job:/job:ro"
       command << " -v #{Shellwords.escape @work_dir}/jobset:/jobset:ro"
       command << " -v #{Shellwords.escape @work_dir}/output:/output"

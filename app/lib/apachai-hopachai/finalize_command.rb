@@ -1,4 +1,5 @@
 # encoding: utf-8
+require_relative '../apachai-hopachai'
 require_relative 'command_utils'
 
 module ApachaiHopachai
@@ -49,6 +50,7 @@ module ApachaiHopachai
       OptionParser.new do |opts|
         nl = "\n#{' ' * 37}"
         opts.banner = "Usage: appa finalize [OPTIONS] JOBSET_PATH"
+        opts.separator "Run this on a jobset in which all jobs are completed. It will mark the entire jobset as complete."
         opts.separator ""
         
         opts.separator "Options:"

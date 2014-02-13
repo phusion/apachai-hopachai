@@ -56,6 +56,7 @@ module ApachaiHopachai
       OptionParser.new do |opts|
         nl = "\n#{' ' * 37}"
         opts.banner = "Usage: appa prepare [OPTIONS] GIT_URL [COMMIT]"
+        opts.separator "Prepare running test jobs on the given git repository."
         opts.separator ""
         
         opts.separator "Options:"
