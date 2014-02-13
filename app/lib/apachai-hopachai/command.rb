@@ -22,7 +22,6 @@ module ApachaiHopachai
     'run'      => 'RunCommand',
     'finalize' => 'FinalizeCommand',
     'daemon'   => 'DaemonCommand',
-    'script'   => 'ScriptCommand',
     'shell'    => 'ShellCommand',
     'help'     => 'HelpCommand'
   }

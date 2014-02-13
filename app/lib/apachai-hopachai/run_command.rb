@@ -18,10 +18,8 @@ module ApachaiHopachai
     end
 
     def self.require_libs
-      require 'apachai-hopachai/script_command'
       require 'tmpdir'
       require 'safe_yaml'
-      ScriptCommand.require_libs
     end
 
     def start
@@ -68,10 +66,7 @@ module ApachaiHopachai
           @options[:dry_run_test] = true
         end
         opts.on("--sudo", "Call Docker using sudo") do |val|
-          @script_options[:sudo] = true
-        end
-        opts.on("--docker-log-dir DIR", String, "Directory to store docker logs to. Default: current working dir") do |val|
-          @script_options[:docker_log_dir] = val
+          @options[:sudo] = true
         end
         opts.on("--bind-mount HOST_PATH:CONTAINER_PATH", "Bind mount a directory inside the container") do |val|
           host_path, container_path = val.split(':', 2)
@@ -103,7 +98,6 @@ module ApachaiHopachai
 
     def parse_argv
       @options = { :bind_mounts => {} }
-      @script_options = {}
       begin
         option_parser.parse!(@argv)
       rescue OptionParser::ParseError => e
