@@ -1,6 +1,8 @@
 #!/bin/bash
 set -ex
 
+export DEBIAN_FRONTEND=noninteractive
+
 curl -L https://get.rvm.io | sudo -u appa sudo bash -s stable
 usermod -a -G rvm appa
 sudo -u appa -H bash -lc 'rvm install 1.8.7'
