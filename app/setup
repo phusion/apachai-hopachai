@@ -1,14 +1,21 @@
 #!/bin/bash
 set -e
 
-if [[ "`id -u`" = 0 ]]; then
-	echo "The setup script must not be run as root. Instead, it must be run as a user who has sudo access."
+TARGET_USER="$1"
+
+if [[ "$TARGET_USER" = "" ]]; then
+	echo "Usage: ./setup <TARGET USER>"
 	exit 1
 fi
 
-function sudo_apt_get_install()
+if [[ "`id -u`" != 0 ]]; then
+	echo "This script must be run as root."
+	exit 1
+fi
+
+function apt_get_install()
 {
-	sudo apt-get install -q -y --force-yes --no-install-recommends "$@"
+	apt-get install -q -y --force-yes --no-install-recommends "$@"
 }
 
 export DEBIAN_FRONTEND=noninteractive
@@ -17,5 +24,5 @@ SELFDIR=`dirname "$0"`
 set -x
 
 cd "$SELFDIR"
-sudo_apt_get_install git postfix inotify-tools
-bundle install --path=vendor
+apt_get_install git postfix inotify-tools
+sudo -u "$TARGET_USER" -H bundle install --path=vendor
