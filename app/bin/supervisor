@@ -1,4 +1,5 @@
-# An init process for inside the container, which reaps
+#!/usr/bin/env ruby
+# An init process for inside the sandbox, which reaps
 # all adopted children.
 
 main_child = fork do

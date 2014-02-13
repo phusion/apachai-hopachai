@@ -1,4 +1,5 @@
 # encoding: utf-8
+require 'apachai-hopachai'
 require 'apachai-hopachai/command_utils'
 
 module ApachaiHopachai
@@ -6,7 +7,7 @@ module ApachaiHopachai
     include CommandUtils
     
     def self.description
-      "Run a script inside a container"
+      "Run a script inside a sandbox"
     end
 
     def self.help
@@ -112,12 +113,12 @@ module ApachaiHopachai
 
     def create_or_use_container
       if should_create_new_container?
-        command = "#{docker} run -d -h=apachai-hopachai -p 3002 -p 3003 "
+        command = "#{docker} run -d -p 3002 -p 3003 "
         @options[:bind_mounts].each_pair do |host_path, container_path|
           command << "-v '#{host_path}:#{container_path}' "
         end
         command << "-v '#{ApachaiHopachai::CONTAINER_UTILS_DIR}:/container_utils' "
-        command << "apachai-hopachai /usr/local/rvm/bin/rvm-exec ruby-2.0.0 ruby /container_utils/supervisor.rb "
+        command << "#{SANDBOX_IMAGE_NAME} /usr/local/rvm/bin/rvm-exec ruby-2.0.0 ruby /container_utils/supervisor.rb "
         command << "sudo -u appa -H /usr/local/rvm/bin/rvm-exec 1.9.3 ruby /bootstrap.rb"
         @logger.debug "Creating container: #{command}"
         @container = `#{command}`.strip

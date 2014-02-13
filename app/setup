@@ -1,0 +1,21 @@
+#!/bin/bash
+set -e
+
+if [[ "`id -u`" = 0 ]]; then
+	echo "The setup script must not be run as root. Instead, it must be run as a user who has sudo access."
+	exit 1
+fi
+
+function sudo_apt_get_install()
+{
+	sudo apt-get install -q -y --force-yes --no-install-recommends "$@"
+}
+
+export DEBIAN_FRONTEND=noninteractive
+SELFDIR=`dirname "$0"`
+
+set -x
+
+cd "$SELFDIR"
+sudo_apt_get_install git postfix inotify-tools
+bundle install --path=vendor

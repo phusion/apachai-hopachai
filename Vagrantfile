@@ -15,13 +15,5 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     f.vmx["displayName"] = "apachai-hopachai"
   end
 
-  if Dir.glob("#{File.dirname(__FILE__)}/.vagrant/machines/default/*/id").empty?
-    # Add lxc-docker package
-    pkg_cmd = "wget -q -O - https://get.docker.io/gpg | apt-key add -;" \
-      "echo deb http://get.docker.io/ubuntu docker main > /etc/apt/sources.list.d/docker.list;" \
-      "apt-get update -qq; apt-get install -q -y --force-yes lxc-docker; "
-    # Add vagrant user to the docker group
-    pkg_cmd << "usermod -a -G docker vagrant; "
-    config.vm.provision :shell, :inline => pkg_cmd
-  end
+  config.vm.provision :shell, :path => "vagrant_provision.sh"
 end

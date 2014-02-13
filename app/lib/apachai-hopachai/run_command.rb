@@ -1,6 +1,8 @@
 # encoding: utf-8
+require 'apachai-hopachai'
 require 'apachai-hopachai/command_utils'
 require 'apachai-hopachai/jobset_utils'
+require 'shellwords'
 
 module ApachaiHopachai
   class RunCommand < Command
@@ -145,9 +147,15 @@ module ApachaiHopachai
 
     def create_work_dir
       @work_dir = Dir.mktmpdir("appa-")
+      Dir.mkdir("#{@work_dir}/output")
+      # The job path can container the ':' character, which Docker does
+      # not allow in -v. So we work around it with a symlink.
+      File.symlink(@job_path, "#{@work_dir}/job")
     end
 
     def destroy_work_dir
+      # The sandbox container can create files that are owned by a different user, so use sudo.
+      system("sudo", "rm", "-rf", "#{@work_dir}/output")
       FileUtils.remove_entry_secure(@work_dir)
     end
 
@@ -155,44 +163,51 @@ module ApachaiHopachai
       @logger.info "Running job with environment: #{@job.info['env_name']}"
 
       @run_result = { 'start_time' => Time.now }
-      run_job_script_and_extract_result
-      
-      FileUtils.cp("#{@work_dir}/runner.log", "#{@job_path}/output.log")
-      @run_result['status'] = File.read("#{@work_dir}/runner.status").to_i
-      @run_result['passed'] = @run_result['status'] == 0
+      exit_code = run_job_script_and_extract_result
+      @run_result['status'] = exit_code
+      @run_result['passed'] = exit_code == 0
       @run_result['end_time'] = Time.now
       @run_result['duration'] = distance_of_time_in_hours_and_minutes(
         @run_result['start_time'], @run_result['end_time'])
     end
 
     def run_job_script_and_extract_result
-      args = options_to_args(@script_options)
-      args << "--script=#{@job_path}"
-      args << "--output=#{@work_dir}/output.tar.gz"
+      command = "#{docker} run -d "
       @options[:bind_mounts].each_pair do |host_path, container_path|
-        args << "--bind-mount=#{host_path}:#{container_path}"
+        command << " -v #{Shellwords.escape host_path}:#{Shellwords.escape container_path} "
       end
-      args << "--"
-      args << (@options[:dry_run_test] ? "--dry-run" : nil)
-      script_command = ScriptCommand.new(args.compact)
-      script_command.logger = @logger
-      # Let any exceptions propagate so that bugs in Apachai Hopachai trigger
-      # a stack trace. If the test inside the container fails, no exception
-      # will be thrown. Instead we'll find a non-zero status in the status file.
-      script_command.start
+      command << " -v #{Shellwords.escape ApachaiHopachai::SOURCE_ROOT}:/appa:ro"
+      command << " -v #{Shellwords.escape @work_dir}/job:/job"
+      command << " -v #{Shellwords.escape @work_dir}/output:/output"
+      command << " #{SANDBOX_IMAGE_NAME} #{SUPERVISOR_COMMAND} #{SANDBOX_JOB_RUNNER_COMMAND}"
+      command << " --dry-run" if @options[:dry_run_test]
 
-      pid = Process.spawn("tar", "xzf", "output.tar.gz",
-        :chdir => @work_dir)
+      @logger.debug "Creating container: #{command}"
+      # The job runner will be blocked until we create the 'continue' file.
+      @container = `#{command}`.strip
+      @logger.info "Job run inside container with ID #{@container}"
+
       begin
-        Process.waitpid(pid)
-      rescue SignalException
-        Process.kill('TERM', pid)
-        Process.waitpid(pid) rescue nil
-        raise
-      end
+        # Redirect logs to job log file.
+        log_file = "#{@job_path}/output.log"
+        pid = Process.spawn("/bin/bash", "-c",
+          "set -o pipefail -e; #{docker} logs -f #{@container} 2>&1 | tee #{Shellwords.escape log_file}",
+          :in  => :in,
+          :out => :out,
+          :err => :err,
+          :close_others => true)
+        # Tell the job runner that it may now continue.
+        File.open("#{@work_dir}/output/continue", "w").close
 
-      if $?.exitstatus != 0
-        abort "Cannot extract test output"
+        # Wait until the container exits.
+        exit_code = `#{docker} wait #{@container}`.strip.to_i
+        Process.waitpid(pid)
+
+        exit_code
+      rescue Exception => e
+        @logger.error "An exception occurred. Killing container."
+        system("#{docker} kill #{@container} >/dev/null 2>/dev/null")
+        raise e
       end
     end
 
@@ -222,6 +237,14 @@ module ApachaiHopachai
         e.exit_status
       else
         1
+      end
+    end
+
+    def docker
+      if @options[:sudo]
+        "sudo docker"
+      else
+        "docker"
       end
     end
 

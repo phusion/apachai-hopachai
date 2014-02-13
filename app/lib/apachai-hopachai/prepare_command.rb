@@ -112,6 +112,12 @@ module ApachaiHopachai
       if @options[:daemonize] && !@options[:log_file]
         abort "If you set --daemonize then you must also set --log-file."
       end
+      if !File.exist?(@options[:output_dir])
+        abort "The output directory #{@options[:output_dir]} does not exist."
+      end
+      if !File.directory?(@options[:output_dir])
+        abort "The output path #{@options[:output_dir]} is not a directory."
+      end
 
       @options[:repository] = @argv[0]
       @options[:commit] = @argv[1]
@@ -119,7 +125,6 @@ module ApachaiHopachai
 
     def create_work_dir
       @work_dir = Dir.mktmpdir("appa-")
-      FileUtils.cp("#{RESOURCES_DIR}/travis-emulator-app/main", "#{@work_dir}/main")
     end
 
     def destroy_work_dir

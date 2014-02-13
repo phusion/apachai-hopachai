@@ -2,7 +2,11 @@
 # encoding: utf-8
 abort "This tool must be run in Ruby 1.9" if RUBY_VERSION <= '1.9'
 
-$LOAD_PATH.unshift(File.expand_path(File.dirname(__FILE__) + "/../lib"))
+root = File.expand_path(File.dirname(__FILE__) + "/..")
+$LOAD_PATH.unshift("#{root}/lib")
+ENV['BUNDLE_GEMFILE'] = "#{root}/Gemfile"
+require 'bundler'
+Bundler.setup(:default)
 require 'apachai-hopachai/command'
 
 module ApachaiHopachai
