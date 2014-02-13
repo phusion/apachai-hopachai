@@ -1,7 +1,7 @@
 # encoding: utf-8
-require 'apachai-hopachai'
-require 'apachai-hopachai/command_utils'
-require 'apachai-hopachai/jobset_utils'
+require_relative '../apachai-hopachai'
+require_relative 'command_utils'
+require_relative 'jobset_utils'
 require 'shellwords'
 
 module ApachaiHopachai

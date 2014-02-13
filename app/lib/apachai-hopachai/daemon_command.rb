@@ -1,6 +1,6 @@
 # encoding: utf-8
-require 'apachai-hopachai/command_utils'
-require 'apachai-hopachai/jobset_utils'
+require_relative 'command_utils'
+require_relative 'jobset_utils'
 
 module ApachaiHopachai
   class DaemonCommand < Command
@@ -17,8 +17,8 @@ module ApachaiHopachai
 
     def self.require_libs
       JobsetUtils.require_libs
-      require 'apachai-hopachai/run_command'
-      require 'apachai-hopachai/finalize_command'
+      require_relative 'run_command'
+      require_relative 'finalize_command'
       require 'safe_yaml'
       require 'fileutils'
       require 'optparse'

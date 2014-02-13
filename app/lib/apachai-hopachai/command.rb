@@ -30,7 +30,7 @@ module ApachaiHopachai
     class_name = COMMANDS[command_name]
     if class_name
       filename = command_name.gsub(/-/, '_')
-      require "apachai-hopachai/#{filename}_command"
+      require_relative("#{filename}_command")
       ApachaiHopachai.const_get(class_name)
     else
       nil

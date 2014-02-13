@@ -1,5 +1,5 @@
 # encoding: utf-8
-require 'apachai-hopachai/command_utils'
+require_relative 'command_utils'
 
 module ApachaiHopachai
   class FinalizeCommand < Command
