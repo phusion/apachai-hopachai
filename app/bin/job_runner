@@ -36,7 +36,11 @@ end
 
 def start
   config = YAML.load_file('/job/travis.yml')
-  Dir.chdir("/job/app")
+  sh "rm", "-rf", "/home/appa/repo"
+  sh "mkdir", "-p", "/home/appa/repo"
+  sh "tar", "xzf", "/jobset/repo.tar.gz", :chdir => "/home/appa/repo"
+  log "cd /home/appa/repo"
+  Dir.chdir("/home/appa/repo")
   run_command_list(config['before_install'])
   run_script(config)
   log "Apachai Hopachai finished."

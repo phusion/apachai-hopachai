@@ -142,9 +142,10 @@ module ApachaiHopachai
     def create_work_dir
       @work_dir = Dir.mktmpdir("appa-")
       Dir.mkdir("#{@work_dir}/output")
-      # The job path can container the ':' character, which Docker does
-      # not allow in -v. So we work around it with a symlink.
+      # The jobset path can container the ':' character, which Docker does
+      # not allow in -v. So we work around it with symlinks.
       File.symlink(@job_path, "#{@work_dir}/job")
+      File.symlink(File.dirname(@job_path), "#{@work_dir}/jobset")
     end
 
     def destroy_work_dir
@@ -171,7 +172,8 @@ module ApachaiHopachai
         command << " -v #{Shellwords.escape host_path}:#{Shellwords.escape container_path} "
       end
       command << " -v #{Shellwords.escape ApachaiHopachai::SOURCE_ROOT}:/appa:ro"
-      command << " -v #{Shellwords.escape @work_dir}/job:/job"
+      command << " -v #{Shellwords.escape @work_dir}/job:/job:ro"
+      command << " -v #{Shellwords.escape @work_dir}/jobset:/jobset:ro"
       command << " -v #{Shellwords.escape @work_dir}/output:/output"
       command << " #{SANDBOX_IMAGE_NAME} #{SUPERVISOR_COMMAND} #{SANDBOX_JOB_RUNNER_COMMAND}"
       command << " --dry-run" if @options[:dry_run_test]
@@ -199,7 +201,7 @@ module ApachaiHopachai
 
         exit_code
       rescue Exception => e
-        @logger.error "An exception occurred. Killing container."
+        @logger.error "An error occurred. Killing container."
         system("#{docker} kill #{@container} >/dev/null 2>/dev/null")
         raise e
       end

@@ -1,5 +1,6 @@
 # encoding: utf-8
 require 'apachai-hopachai/command_utils'
+require 'shellwords'
 
 module ApachaiHopachai
   class PrepareCommand < Command
@@ -31,7 +32,7 @@ module ApachaiHopachai
           clone_repo
           extract_repo_info
           environments = infer_test_environments
-          create_jobs(environments)
+          create_jobset(environments)
           notify_jobset_changed
         ensure
           destroy_work_dir
@@ -144,31 +145,32 @@ module ApachaiHopachai
         args << "--depth 1"
       end
 
-      if !system("git clone #{args.join(' ')} #{@options[:repository]} '#{@work_dir}/app'")
-        abort "git clone failed"
+      if !system("git clone #{args.join(' ')} #{@options[:repository]} '#{@work_dir}/repo'")
+        abort "Git clone failed"
       end
 
       if @options[:commit]
-        system("git", "checkout", "-q", @options[:commit], :chdir => "#{@work_dir}/app")
+        if !system("git", "checkout", "-q", @options[:commit], :chdir => "#{@work_dir}/repo")
+          abort "Unable to checkout commit #{@options[:commit]}"
+        end
       end
     end
 
     def extract_repo_info
       @repo_info = {}
-      Dir.chdir("#{@work_dir}/app") do
-        lines = `git show --pretty='format:%h\n%H\n%an\n%ae\n%cn\n%ce\n%s' -s`.split("\n")
-        @repo_info['commit'],
-          @repo_info['sha'],
-          @repo_info['author'],
-          @repo_info['author_email'],
-          @repo_info['committer'],
-          @repo_info['committer_email'],
-          @repo_info['subject'] = lines
-      end
+      e_dir = Shellwords.escape("#{@work_dir}/repo")
+      lines = `cd #{e_dir} && git show --pretty='format:%h\n%H\n%an\n%ae\n%cn\n%ce\n%s' -s`.split("\n")
+      @repo_info['commit'],
+        @repo_info['sha'],
+        @repo_info['author'],
+        @repo_info['author_email'],
+        @repo_info['committer'],
+        @repo_info['committer_email'],
+        @repo_info['subject'] = lines
     end
 
     def infer_test_environments
-      config = YAML.load_file("#{@work_dir}/app/.travis.yml", :safe => true)
+      config = YAML.load_file("#{@work_dir}/repo/.travis.yml", :safe => true)
       environments = []
       traverse_combinations(0, environments, config, COMBINATORIC_KEYS)
       environments.sort! do |a, b|
@@ -224,18 +226,37 @@ module ApachaiHopachai
       result.join("; ")
     end
 
-    def create_jobs(environments)
+    def create_jobset(environments)
       @logger.info "Creating jobset: #{jobset_path}"
       Dir.mkdir(jobset_path)
+      begin
+        if !create_jobset_repo_archive
+          abort "Unable to create repository archive file #{jobset_repo_archive_path}"
+        end
 
-      environments.each_with_index do |env, i|
-        create_job(env, i)
-      end
+        environments.each_with_index do |env, i|
+          create_job(env, i)
+        end
 
-      @logger.info "Committing jobset #{jobset_path}"
-      File.open("#{jobset_path}/info.yml", "w") do |io|
-        YAML.dump(jobset_info, io)
+        @logger.info "Committing jobset #{jobset_path}"
+        File.open("#{jobset_path}/info.yml", "w") do |io|
+          YAML.dump(jobset_info, io)
+        end
+      rescue Exception => e
+        @logger.error "An error occurred. Deleting jobset."
+        FileUtils.remove_entry_secure(jobset_path)
+        raise e
       end
+    end
+
+    def jobset_repo_archive_path
+      "#{jobset_path}/repo.tar.gz"
+    end
+
+    def create_jobset_repo_archive
+      @logger.debug "Creating archive #{jobset_repo_archive_path}"
+      system("env", "GZIP=-3", "tar", "-czf", jobset_repo_archive_path,
+        ".", :chdir => "#{@work_dir}/repo")
     end
 
     def create_job(env, i)
@@ -245,7 +266,6 @@ module ApachaiHopachai
 
       Dir.mkdir(path)
       begin
-        FileUtils.cp_r(Dir["#{@work_dir}/*"], path)
         File.open("#{path}/travis.yml", "w") do |io|
           YAML.dump(env, io)
         end
