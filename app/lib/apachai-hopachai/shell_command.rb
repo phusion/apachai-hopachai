@@ -1,8 +1,6 @@
 # encoding: utf-8
 require_relative '../apachai-hopachai'
 require_relative 'command_utils'
-require 'optparse'
-require 'shellwords'
 
 module ApachaiHopachai
   class ShellCommand < Command
@@ -18,6 +16,7 @@ module ApachaiHopachai
 
     def start
       parse_argv
+      require_libs
       check_container_image_exists
       last_container = find_last_container
       run_shell
@@ -76,6 +75,11 @@ module ApachaiHopachai
         self.class.help
         exit 0
       end
+    end
+
+    def require_libs
+      require 'optparse'
+      require 'shellwords'
     end
 
     def find_last_container

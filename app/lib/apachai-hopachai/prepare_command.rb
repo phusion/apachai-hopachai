@@ -1,6 +1,5 @@
 # encoding: utf-8
 require_relative 'command_utils'
-require 'shellwords'
 
 module ApachaiHopachai
   class PrepareCommand < Command
@@ -48,6 +47,7 @@ module ApachaiHopachai
       require 'tmpdir'
       require 'safe_yaml'
       require 'fileutils'
+      require 'shellwords'
     end
 
     def option_parser

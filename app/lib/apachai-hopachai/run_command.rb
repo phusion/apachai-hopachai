@@ -2,7 +2,6 @@
 require_relative '../apachai-hopachai'
 require_relative 'command_utils'
 require_relative 'jobset_utils'
-require 'shellwords'
 
 module ApachaiHopachai
   class RunCommand < Command
@@ -19,7 +18,9 @@ module ApachaiHopachai
 
     def self.require_libs
       require 'tmpdir'
+      require 'shellwords'
       require 'safe_yaml'
+      JobsetUtils.require_libs
     end
 
     def start

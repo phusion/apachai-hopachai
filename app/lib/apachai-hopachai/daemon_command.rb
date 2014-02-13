@@ -22,6 +22,7 @@ module ApachaiHopachai
       require 'safe_yaml'
       require 'fileutils'
       require 'optparse'
+      JobsetUtils.require_libs
       RunCommand.require_libs
       FinalizeCommand.require_libs
     end

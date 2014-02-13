@@ -1,3 +1,6 @@
+# This is the Gemfile for the 'appa' command only.
+# The 'job_runner' command uses the Gemfile in 'sandbox/'.
+# The web UI has its own Gemfile as well.
 source 'https://rubygems.org'
 
 gem "safe_yaml"

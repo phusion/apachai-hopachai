@@ -2,6 +2,10 @@
 
 module ApachaiHopachai
   module JobsetUtils
+    def self.require_libs
+      require 'safe_yaml'
+    end
+
     class Jobset
       attr_reader :path
 
