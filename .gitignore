@@ -1,7 +1,7 @@
 .DS_Store
 .bundle
 /.vagrant*
-/app/vendor
+/vendor
 /tmp
 /*.tar.gz
 /output

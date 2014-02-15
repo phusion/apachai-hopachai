@@ -20,9 +20,14 @@ function apt_get_install()
 
 export DEBIAN_FRONTEND=noninteractive
 SELFDIR=`dirname "$0"`
+if [[ "$TARGET_USER" = vagrant ]]; then
+	BUNDLE_PATH=
+else
+	BUNDLE_PATH="--path vendor"
+fi
 
 set -x
 
 cd "$SELFDIR"
 apt_get_install git postfix inotify-tools
-sudo -u "$TARGET_USER" -H bundle install --path=vendor
+sudo -u "$TARGET_USER" -H bundle install $BUNDLE_PATH
