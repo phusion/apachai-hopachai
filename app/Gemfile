@@ -1,12 +1,50 @@
-# This is the Gemfile for the 'appa' command only.
-# The 'job_runner' command uses the Gemfile in 'sandbox/'.
-# The web UI has its own Gemfile as well.
 source 'https://rubygems.org'
 
-gem "safe_yaml"
-gem "ansi2html"
-gem "mail"
+gem 'safe_yaml'
+
+group :models do
+  gem 'rails', '~> 4.0.2'
+  gem 'pg'
+  gem 'cancan'
+  gem 'devise'
+  gem 'rolify'
+  gem 'schema_plus'
+  gem 'simple_enum'
+  gem 'default_value_for'
+end
+
+group :cli do
+  gem 'ansi2html'
+  gem 'mail'
+end
+
+group :webui do
+  gem 'sass-rails', '~> 4.0.0'
+  gem 'uglifier', '>= 1.3.0'
+  gem 'coffee-rails', '~> 4.0.0'
+  gem 'jquery-rails'
+  gem 'turbolinks'
+  gem 'jbuilder', '~> 1.2'
+  gem 'bootstrap-sass', '>= 3.0.0.0'
+  gem 'simple_form'
+  # For Rails 4 support.
+  gem 'activeadmin', :github => 'gregbell/active_admin'
+end
 
 group :development do
-  gem "rspec"
+  gem 'better_errors'
+  gem 'binding_of_caller', :platforms=>[:mri_19, :mri_20, :mri_21, :rbx]
+  gem 'quiet_assets'
+  gem 'rails_layout'
+end
+
+group :development, :test do
+  gem 'factory_girl_rails'
+  gem 'rspec-rails'
+end
+
+group :test do
+  gem 'capybara'
+  gem 'database_cleaner', '1.0.1'
+  gem 'email_spec'
 end

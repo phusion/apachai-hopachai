@@ -5,7 +5,7 @@ module ApachaiHopachai
   class PrepareCommand < Command
     include CommandUtils
 
-    COMBINATORIC_KEYS = ['rvm', 'env'].freeze
+    COMBINATORIC_KEYS = ['rvm', 'gemfile', 'env'].freeze
 
     def self.description
       "Prepare test jobs"
@@ -28,11 +28,11 @@ module ApachaiHopachai
       begin
         create_work_dir
         begin
+          prepare_job_set
           clone_repo
           extract_repo_info
           environments = infer_test_environments
-          create_jobset(environments)
-          notify_jobset_changed
+          create_job_set(environments)
         ensure
           destroy_work_dir
         end
@@ -48,6 +48,7 @@ module ApachaiHopachai
       require 'safe_yaml'
       require 'fileutils'
       require 'shellwords'
+      require_relative 'database_models'
     end
 
     def option_parser
@@ -55,19 +56,13 @@ module ApachaiHopachai
       @options = {}
       OptionParser.new do |opts|
         nl = "\n#{' ' * 37}"
-        opts.banner = "Usage: appa prepare [OPTIONS] GIT_URL [COMMIT]"
+        opts.banner = "Usage: appa prepare [OPTIONS] OWNER/PROJECT_NAME [COMMIT]"
         opts.separator "Prepare running test jobs on the given git repository."
         opts.separator ""
         
         opts.separator "Options:"
-        opts.on("--output-dir DIR", "-o", String, "Store prepared jobs in this directory") do |val|
-          @options[:output_dir] = val
-        end
         opts.on("--limit N", Integer, "Limit the number of environments to prepare. Default: prepare all environments") do |val|
           @options[:limit] = val
-        end
-        opts.on("--repo-name NAME", String, "A friendly name for the repository, to display in reports") do |val|
-          @options[:repo_name] = val
         end
         opts.on("--before-sha SHA", String, "The SHA of the beginning of the changeset, to display in reports") do |val|
           @options[:before_sha] = val
@@ -108,20 +103,15 @@ module ApachaiHopachai
         self.class.help
         exit 1
       end
-      if !@options[:output_dir]
-        abort "You must set --output-dir."
-      end
       if @options[:daemonize] && !@options[:log_file]
         abort "If you set --daemonize then you must also set --log-file."
       end
-      if !File.exist?(@options[:output_dir])
-        abort "The output directory #{@options[:output_dir]} does not exist."
-      end
-      if !File.directory?(@options[:output_dir])
-        abort "The output path #{@options[:output_dir]} is not a directory."
-      end
 
-      @options[:repository] = @argv[0]
+      begin
+        @project = Project.find_by_owner_and_name(@argv[0])
+      rescue ActiveRecord::RecordNotFound
+        abort "Could not find a project with owner and name #{argv[0].inspect}."
+      end
       @options[:commit] = @argv[1]
     end
 
@@ -133,11 +123,17 @@ module ApachaiHopachai
       FileUtils.remove_entry_secure(@work_dir)
     end
 
+    def prepare_job_set
+      @job_set = JobSet.new
+      @job_set.project = @project
+      @job_set.before_revision = result['before_sha']
+    end
+
     def clone_repo
       if @options[:commit]
-        @logger.info "Cloning from #{@options[:repository]}, commit #{@options[:commit]}"
+        @logger.info "Cloning from #{@project.repo_url}, commit #{@options[:commit]}"
       else
-        @logger.info "Cloning from #{@options[:repository]}"
+        @logger.info "Cloning from #{@project.repo_url}"
       end
 
       args = []
@@ -146,7 +142,7 @@ module ApachaiHopachai
         args << "--depth 1"
       end
 
-      if !system("git clone #{args.join(' ')} #{@options[:repository]} '#{@work_dir}/repo'")
+      if !system("git clone #{args.join(' ')} #{Shellwords.escape @project.repo_url} #{Shellwords.escape @work_dir}/repo")
         abort "Git clone failed"
       end
 
@@ -158,16 +154,14 @@ module ApachaiHopachai
     end
 
     def extract_repo_info
-      @repo_info = {}
       e_dir = Shellwords.escape("#{@work_dir}/repo")
-      lines = `cd #{e_dir} && git show --pretty='format:%h\n%H\n%an\n%ae\n%cn\n%ce\n%s' -s`.split("\n")
-      @repo_info['commit'],
-        @repo_info['sha'],
-        @repo_info['author'],
-        @repo_info['author_email'],
-        @repo_info['committer'],
-        @repo_info['committer_email'],
-        @repo_info['subject'] = lines
+      lines = `cd #{e_dir} && git show --pretty='format:%H\n%an\n%ae\n%cn\n%ce\n%s' -s`.split("\n")
+      @job_set.revision,
+        @job_set.author_name,
+        @job_set.author_email,
+        @job_set.committer_name,
+        @job_set.committer_email,
+        @job_set.subject = lines
     end
 
     def infer_test_environments
@@ -227,109 +221,46 @@ module ApachaiHopachai
       result.join("; ")
     end
 
-    def create_jobset(environments)
-      @logger.info "Creating jobset: #{jobset_path}"
-      Dir.mkdir(jobset_path)
-      begin
-        if !create_jobset_repo_archive
-          abort "Unable to create repository archive file #{jobset_repo_archive_path}"
+    def create_job_set(environments)
+      environments.each_with_index do |environment, i|
+        create_job(@job_set, environment, i + 1)
+      end
+      if @job_set.save
+        @logger.info("Created job set with ID #{@job_set.id}. " +
+          "It contains #{@job_set.jobs.count} jobs, with IDs #{@job_set.job_ids}")
+        @logger.info("Creating repo cache...")
+        if create_job_set_repo_cache
+          @logger.info("Repo cache created.")
+        else
+          @logger.warn("Unable to create repository cache file for job set.")
         end
-
-        environments.each_with_index do |env, i|
-          create_job(env, i)
-        end
-
-        @logger.info "Committing jobset #{jobset_path}"
-        File.open("#{jobset_path}/info.yml", "w") do |io|
-          YAML.dump(jobset_info, io)
-        end
-      rescue Exception => e
-        @logger.error "An error occurred. Deleting jobset."
-        FileUtils.remove_entry_secure(jobset_path)
-        raise e
+      else
+        report_model_errors(@logger, @job_set)
+        abort
       end
     end
 
-    def jobset_repo_archive_path
-      "#{jobset_path}/repo.tar.gz"
+    def job_set_repo_cache_path
+      "#{job_set_path}/repo.tar.gz"
     end
 
-    def create_jobset_repo_archive
-      @logger.debug "Creating archive #{jobset_repo_archive_path}"
-      system("env", "GZIP=-3", "tar", "-czf", jobset_repo_archive_path,
+    def create_job_set_repo_cache
+      @logger.debug "Creating archive #{job_set_repo_cache_path}"
+      system("env", "GZIP=-3", "tar", "-czf", job_set_repo_cache_path,
         ".", :chdir => "#{@work_dir}/repo")
     end
 
-    def create_job(env, i)
-      path = job_path(env, i)
-      @logger.info "Preparing job ##{i + 1}: #{inspect_env(env)}"
-      @logger.info "Saving job into #{path}"
-
-      Dir.mkdir(path)
-      begin
-        File.open("#{path}/travis.yml", "w") do |io|
-          YAML.dump(env, io)
-        end
-        File.open("#{path}/info.yml", "w") do |io|
-          YAML.dump(job_info(env, i), io)
-        end
-      rescue Exception
-        FileUtils.remove_entry_secure(path)
-        raise
+    def create_job(job_set, environment, number)
+      @logger.info "Preparing job ##{number}: #{inspect_env(env)}"
+      job = job_set.build
+      job.number = number
+      job.name = inspect_env(environment)
+      job.environment = environment
+      if !job.valid?
+        report_model_errors(@logger, job)
+        abort
       end
-
-      path
-    end
-
-    def notify_jobset_changed
-      now = Time.now
-      File.utime(now, now, jobset_path)
-      File.utime(now, now, jobset_path + "/..")
-    end
-
-    def job_path(env, i)
-      File.expand_path("#{jobset_path}/#{i + 1}.appa-job")
-    end
-
-    def job_info(env, i)
-      {
-        'id' => i + 1,
-        'name' => "##{i + 1}",
-        'created_at' => Time.now,
-        'env_name' => inspect_env(env)
-      }
-    end
-
-    def jobset_path
-      @jobset_path ||= File.expand_path(@options[:output_dir] +
-        "/" + Time.now.strftime("%Y-%m-%d-%H:%M:%S") + "-#{Process.pid}.appa-jobset")
-    end
-
-    def jobset_info
-      result = @repo_info.dup
-
-      if @options[:before_sha]
-        result['before_sha'] = @options[:before_sha]
-      else
-        result['before_sha'] = result['sha']
-      end
-      result['before_commit'] = shorten_sha(result['before_sha'])
-
-      result['repo_url'] = @options[:repository]
-      if @options[:repo_name]
-        result['repo_name'] = @options[:repo_name]
-      else
-        result['repo_name'] = @options[:repository].sub(/.*\//, '')
-      end
-
-      result['file_version'] = '1.0'
-      result['preparation_time'] = Time.now
-
-      result
-    end
-
-    def shorten_sha(sha)
-      sha[0..6]
+      job
     end
   end
 end

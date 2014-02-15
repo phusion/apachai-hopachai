@@ -6,7 +6,7 @@ root = File.expand_path(File.dirname(__FILE__) + "/..")
 $LOAD_PATH.unshift("#{root}/lib")
 ENV['BUNDLE_GEMFILE'] = "#{root}/Gemfile"
 require 'bundler'
-Bundler.setup(:default)
+Bundler.setup(:default, :cli, :models)
 require 'apachai-hopachai/command'
 
 module ApachaiHopachai

@@ -20,14 +20,60 @@ function apt_get_install()
 
 export DEBIAN_FRONTEND=noninteractive
 SELFDIR=`dirname "$0"`
-if [[ "$TARGET_USER" = vagrant ]]; then
-	BUNDLE_PATH=
-else
-	BUNDLE_PATH="--path vendor"
+set -x
+cd "$SELFDIR"
+
+# Add APT sources.
+if ! [[ -e /etc/apt/sources.list.d/docker.list ]]; then
+	if ! [[ -e /usr/bin/wget ]]; then
+		apt-get update
+		apt_get_install wget
+	fi
+	wget -q -O - https://get.docker.io/gpg | apt-key add -
+	echo deb http://get.docker.io/ubuntu docker main > /etc/apt/sources.list.d/docker.list
+	apt-get update
 fi
 
-set -x
+# Install software.
+apt_get_install lxc-docker git postfix inotify-tools libpq-dev postgresql
 
-cd "$SELFDIR"
-apt_get_install git postfix inotify-tools
-sudo -u "$TARGET_USER" -H bundle install $BUNDLE_PATH
+# Setup Docker.
+usermod -a -G docker $TARGET_USER
+
+# Setup PostgreSQL service.
+update-rc.d -f postgresql remove
+if ! [[ -e /etc/service/postgresql/run ]]; then
+	service postgresql stop
+fi
+mkdir -p /etc/service/postgresql
+cp resources/run_postgresql /etc/service/postgresql/run
+sv start /etc/service/postgresql
+sleep 1
+
+# Setup PostgreSQL authentication.
+if ! grep -q $TARGET_USER /etc/postgresql/9.1/main/pg_ident.conf; then
+	echo "appa $TARGET_USER $TARGET_USER" >> /etc/postgresql/9.1/main/pg_ident.conf
+fi
+if ! grep -q $TARGET_USER /etc/postgresql/9.1/main/pg_hba.conf; then
+	echo "local all $TARGET_USER peer map=appa" >> /etc/postgresql/9.1/main/pg_hba.conf
+fi
+if ! (sudo -u postgres psql <<<"select rolname from pg_roles" | grep -q $TARGET_USER); then
+	sudo -u postgres -H createuser -s -r $TARGET_USER
+fi
+
+# Setup PostgreSQL databases.
+databases=`sudo -u postgres -H psql <<<"select datname from pg_database where datistemplate = false"`
+if [[ $TARGET_USER = vagrant ]]; then
+	if ! [[ "$databases" =~ appa_dev ]]; then
+		sudo -u postgres -H createdb appa_dev
+	fi
+	if ! [[ "$databases" =~ appa_test ]]; then
+		sudo -u postgres -H createdb appa_test
+	fi
+fi
+if ! [[ "$databases" =~ appa_prod ]]; then
+	sudo -u postgres -H createdb appa_prod
+fi
+
+# Install gem bundle.
+sudo -u $TARGET_USER -H bundle install --path vendor

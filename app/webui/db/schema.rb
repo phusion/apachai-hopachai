@@ -11,18 +11,10 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20140213235405) do
+ActiveRecord::Schema.define(version: 20140213235418) do
 
-  create_table "roles", force: true do |t|
-    t.string   "name"
-    t.integer  "resource_id"
-    t.string   "resource_type"
-    t.datetime "created_at"
-    t.datetime "updated_at"
-  end
-
-  add_index "roles", ["name", "resource_type", "resource_id"], name: "index_roles_on_name_and_resource_type_and_resource_id"
-  add_index "roles", ["name"], name: "index_roles_on_name"
+  # These are extensions that must be enabled in order to support this database
+  enable_extension "plpgsql"
 
   create_table "users", force: true do |t|
     t.string   "email",                  default: "", null: false
@@ -35,19 +27,83 @@ ActiveRecord::Schema.define(version: 20140213235405) do
     t.datetime "last_sign_in_at"
     t.string   "current_sign_in_ip"
     t.string   "last_sign_in_ip"
-    t.datetime "created_at"
-    t.datetime "updated_at"
+    t.datetime "created_at",                          null: false
+    t.datetime "updated_at",                          null: false
     t.string   "name"
+    t.index ["email"], :name => "index_users_on_email", :unique => true
+    t.index ["reset_password_token"], :name => "index_users_on_reset_password_token", :unique => true
   end
 
-  add_index "users", ["email"], name: "index_users_on_email", unique: true
-  add_index "users", ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
+  create_table "projects", force: true do |t|
+    t.integer  "owner_id",    null: false
+    t.string   "name",        null: false
+    t.string   "repo_url",    null: false
+    t.datetime "created_at",  null: false
+    t.datetime "updated_at",  null: false
+    t.text     "public_key",  null: false
+    t.text     "private_key", null: false
+    t.index ["owner_id"], :name => "fk__projects_owner_id"
+    t.foreign_key ["owner_id"], "users", ["id"], :on_update => :cascade, :on_delete => :no_action, :name => "fk_projects_owner_id"
+  end
+
+  create_table "job_sets", force: true do |t|
+    t.integer  "project_id",                           null: false
+    t.string   "state_cd",                             null: false
+    t.datetime "created_at",                           null: false
+    t.string   "revision",                             null: false
+    t.string   "before_revision",                      null: false
+    t.string   "branch"
+    t.string   "tag"
+    t.string   "author_name",                          null: false
+    t.string   "author_email",                         null: false
+    t.string   "subject",                              null: false
+    t.string   "language"
+    t.text     "bundler_args"
+    t.boolean  "init_git_submodules",   default: true, null: false
+    t.text     "before_install_script"
+    t.text     "install_script"
+    t.text     "before_script"
+    t.text     "script"
+    t.text     "after_success_script"
+    t.text     "after_failure_script"
+    t.text     "after_script"
+    t.index ["project_id"], :name => "fk__job_sets_project_id"
+    t.foreign_key ["project_id"], "projects", ["id"], :on_update => :cascade, :on_delete => :cascade, :name => "fk_job_sets_project_id"
+  end
+
+  create_table "jobs", force: true do |t|
+    t.integer  "job_set_id",    null: false
+    t.string   "state_cd",      null: false
+    t.integer  "number",        null: false
+    t.string   "name",          null: false
+    t.string   "log_file_path", null: false
+    t.integer  "lock_version"
+    t.datetime "created_at",    null: false
+    t.text     "environment"
+    t.datetime "start_time"
+    t.datetime "end_time"
+    t.index ["job_set_id"], :name => "fk__jobs_job_set_id"
+    t.foreign_key ["job_set_id"], "job_sets", ["id"], :on_update => :cascade, :on_delete => :cascade, :name => "fk_jobs_job_set_id"
+  end
+
+  create_table "roles", force: true do |t|
+    t.string   "name"
+    t.integer  "resource_id"
+    t.string   "resource_type"
+    t.datetime "created_at",    null: false
+    t.datetime "updated_at",    null: false
+    t.index ["name", "resource_type", "resource_id"], :name => "index_roles_on_name_and_resource_type_and_resource_id"
+    t.index ["name"], :name => "index_roles_on_name"
+  end
 
   create_table "users_roles", id: false, force: true do |t|
     t.integer "user_id"
     t.integer "role_id"
+    t.index ["role_id"], :name => "fk__users_roles_role_id"
+    t.index ["user_id", "role_id"], :name => "index_users_roles_on_user_id_and_role_id"
+    t.index ["user_id"], :name => "fk__users_roles_user_id"
+    t.foreign_key ["role_id"], "roles", ["id"], :on_update => :no_action, :on_delete => :no_action, :name => "fk_users_roles_role_id"
+    t.foreign_key ["user_id"], "users", ["id"], :on_update => :no_action, :on_delete => :no_action, :name => "fk_users_roles_user_id"
   end
-
-  add_index "users_roles", ["user_id", "role_id"], name: "index_users_roles_on_user_id_and_role_id"
 
 end

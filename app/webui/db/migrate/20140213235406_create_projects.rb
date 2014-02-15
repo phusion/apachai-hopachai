@@ -9,6 +9,8 @@ class CreateProjects < ActiveRecord::Migration
       t.string :name, :null => false
       t.string :repo_url, :null => false
       t.timestamps :null => false
+      t.text :public_key, :null => false
+      t.text :private_key, :null => false
     end
   end
 end

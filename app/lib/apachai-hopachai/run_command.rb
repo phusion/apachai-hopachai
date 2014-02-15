@@ -1,7 +1,6 @@
 # encoding: utf-8
 require_relative '../apachai-hopachai'
 require_relative 'command_utils'
-require_relative 'jobset_utils'
 
 module ApachaiHopachai
   class RunCommand < Command
@@ -20,7 +19,7 @@ module ApachaiHopachai
       require 'tmpdir'
       require 'shellwords'
       require 'safe_yaml'
-      JobsetUtils.require_libs
+      require_relative 'database_models'
     end
 
     def start
@@ -29,18 +28,13 @@ module ApachaiHopachai
       maybe_daemonize
       maybe_create_pid_file
       begin
-        read_and_verify_job
+        load_and_verify_job
         create_work_dir
+        set_job_processing
         begin
-          @job.set_processing
-          begin
-            run_job
-            save_result
-            notify_jobset_changed
-          ensure
-            @job.unset_processing
-          end
+          run_job
         rescue StandardError, SignalException => e
+          set_job_errored
           exit(log_error(e))
         ensure
           destroy_work_dir
@@ -56,7 +50,7 @@ module ApachaiHopachai
       require 'optparse'
       OptionParser.new do |opts|
         nl = "\n#{' ' * 37}"
-        opts.banner = "Usage: appa run [OPTIONS] JOB_PATH"
+        opts.banner = "Usage: appa run [OPTIONS] JOB_ID"
         opts.separator "Run a specific test job."
         opts.separator ""
 
@@ -117,25 +111,20 @@ module ApachaiHopachai
       if @options[:daemonize] && !@options[:log_file]
         abort "If you set --daemonize then you must also set --log-file."
       end
-
-      @job_path = File.expand_path(@argv[0])
     end
 
-    def read_and_verify_job
-      jobset_path = File.dirname(@job_path)
-      abort "The given job is not in a jobset" if jobset_path == @job_path
-      abort "The given jobset does not exist" if !File.exist?(jobset_path)
+    def load_and_verify_job
+      begin
+        @job = Job.find(@argv[0])
+      rescue ActiveRecord::RecordNotFound
+        abort "Job with ID #{@argv[0]} not found."
+      end
+      @job_set = @job.job_set
 
-      @job = Job.new(@job_path)
-      abort "The given path is not a valid job" if !@job.valid?
-      abort "Job is already being processed" if @job.processing?
+      abort "Job is already being processed" if @job.state == :processing
       if @job.processed? && !@options[:rerun]
         abort "Job has already been processed. Use --rerun if you want to rerun this job"
       end
-
-      @jobset = Jobset.new(jobset_path)
-      abort "The given jobset is not complete" if !@jobset.complete?
-      abort "Jobset format version #{@jobset.version} is unsupported" if !@jobset.version_supported?
     end
 
     def create_work_dir
@@ -153,16 +142,25 @@ module ApachaiHopachai
       FileUtils.remove_entry_secure(@work_dir)
     end
 
-    def run_job
-      @logger.info "Running job with environment: #{@job.info['env_name']}"
+    def set_job_processing
+      begin
+        @job.update_attributes!(:state => :processing,
+          :start_time => Time.now)
+      rescue ActiveRecord::StaleObjectError
+        abort "Another process is currently processing this job."
+      end
+    end
 
-      @run_result = { 'start_time' => Time.now }
+    def run_job
+      @logger.info "Running job ##{@job.number}: #{@job.name}"
       exit_code = run_job_script_and_extract_result
-      @run_result['status'] = exit_code
-      @run_result['passed'] = exit_code == 0
-      @run_result['end_time'] = Time.now
-      @run_result['duration'] = distance_of_time_in_hours_and_minutes(
-        @run_result['start_time'], @run_result['end_time'])
+      @job.end_time = Time.now
+      if exit_code == 0
+        @job.state = :succeeded
+      else
+        @job.state = :failed
+      end
+      @job.save!
     end
 
     def run_job_script_and_extract_result
@@ -177,16 +175,16 @@ module ApachaiHopachai
       command << " #{SANDBOX_IMAGE_NAME} #{SUPERVISOR_COMMAND} #{SANDBOX_JOB_RUNNER_COMMAND}"
       command << " --dry-run" if @options[:dry_run_test]
 
-      @logger.debug "Creating container: #{command}"
+      @logger.debug "Creating sandbox: #{command}"
       # The job runner will be blocked until we create the 'continue' file.
       @container = `#{command}`.strip
-      @logger.info "Job run inside container with ID #{@container}"
+      @logger.info "Job run inside sandbox with container ID #{@container}"
 
       begin
         # Redirect logs to job log file.
-        log_file = "#{@job_path}/output.log"
+        e_log_file = Shellwords.escape(@job.log_file_path)
         pid = Process.spawn("/bin/bash", "-c",
-          "set -o pipefail -e; #{docker} logs -f #{@container} 2>&1 | tee #{Shellwords.escape log_file}",
+          "set -o pipefail -e; #{docker} logs -f #{@container} 2>&1 | tee #{e_log_file}",
           :in  => :in,
           :out => :out,
           :err => :err,
@@ -200,24 +198,18 @@ module ApachaiHopachai
 
         exit_code
       rescue Exception => e
-        @logger.error "An error occurred. Killing container."
+        @logger.error "An error occurred. Killing sandbox."
         system("#{docker} kill #{@container} >/dev/null 2>/dev/null")
         raise e
       end
     end
 
-    def save_result
-      filename = "#{@job_path}/result.yml"
-      @logger.info "Saving result to #{filename}"
-      File.open(filename, "w") do |io|
-        YAML.dump(@run_result, io)
+    def set_job_errored
+      begin
+        @job.update_attributes!(:state, :errored)
+      rescue ActiveRecord::StaleObjectError
+        @logger.warn("Unable to set job state to 'errored': job has been concurrently modified.")
       end
-    end
-
-    def notify_jobset_changed
-      now = Time.now
-      File.utime(now, now, @jobset.path)
-      File.utime(now, now, @jobset.path + "/..")
     end
 
     def log_error(e)
@@ -241,10 +233,6 @@ module ApachaiHopachai
       else
         "docker"
       end
-    end
-
-    def h(text)
-      ERB::Util.h(text)
     end
   end
 end

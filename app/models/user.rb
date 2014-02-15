@@ -1,4 +1,6 @@
 class User < ActiveRecord::Base
+  has_many :projects, :inverse_of => :owner
+
   rolify
   # Include default devise modules. Others available are:
   # :confirmable, :lockable, :timeoutable and :omniauthable

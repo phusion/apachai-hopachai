@@ -4,10 +4,13 @@ require 'rails/all'
 
 # Require the gems listed in Gemfile, including any gems
 # you've limited to :test, :development, or :production.
-Bundler.require(:default, Rails.env)
+Bundler.require(:default, :models, :webui, Rails.env)
+
+SafeYAML::OPTIONS[:default_mode] = :safe
 
 module ApachaiHopachai
   class Application < Rails::Application
+    config.paths["config/database"] = "#{APP_ROOT}/config/database.yml"
     config.autoload_paths += ["#{APP_ROOT}/models"]
 
     # don't generate RSpec tests for views and helpers
