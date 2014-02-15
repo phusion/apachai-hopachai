@@ -1,0 +1,14 @@
+class CreateProjects < ActiveRecord::Migration
+  def change
+    create_table(:projects) do |t|
+      t.integer :owner_id, :null => false, :foreign_key => {
+      	:references => :users,
+      	:on_delete => :no_action,
+      	:on_update => :cascade
+      }
+      t.string :name, :null => false
+      t.string :repo_url, :null => false
+      t.timestamps :null => false
+    end
+  end
+end
