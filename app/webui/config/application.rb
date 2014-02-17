@@ -12,7 +12,6 @@ SafeYAML::OPTIONS[:default_mode] = :safe
 module ApachaiHopachai
   class Application < Rails::Application
     config.paths["config/database"] = "#{APP_ROOT}/config/database.yml"
-    config.autoload_paths += ["#{APP_ROOT}/models"]
 
     # don't generate RSpec tests for views and helpers
     config.generators do |g|
