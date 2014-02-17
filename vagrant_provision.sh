@@ -10,6 +10,10 @@ export DEBIAN_FRONTEND=noninteractive
 
 set -x
 
+# Allow seeing kernel errors.
+dmesg -n 7
+setterm -blank 0
+
 if ! [[ -e /etc/apt/sources.list.d/brightbox.list ]]; then
 	apt-key adv --keyserver keyserver.ubuntu.com --recv-keys C3173AA6
 	echo deb http://ppa.launchpad.net/brightbox/ruby-ng/ubuntu precise main > /etc/apt/sources.list.d/brightbox.list
@@ -22,7 +26,8 @@ if ! [[ -e /etc/apt/sources.list.d/passenger.list ]]; then
 	echo deb https://oss-binaries.phusionpassenger.com/apt/passenger precise main > /etc/apt/sources.list.d/passenger.list
 	apt-get update
 fi
-apt_get_install ruby2.1 ruby2.1-dev nodejs runit wget nginx-extras passenger
+apt_get_install ruby2.1 ruby2.1-dev ruby-switch nodejs runit wget nginx-extras passenger
+ruby-switch --set ruby2.1
 gem install bundler rake --no-rdoc --no-ri
 
 ln -sf /vagrant/app /appa

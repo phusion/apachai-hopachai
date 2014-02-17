@@ -47,6 +47,9 @@ if ! [[ -e /etc/service/postgresql/run ]]; then
 fi
 mkdir -p /etc/service/postgresql
 cp resources/run_postgresql /etc/service/postgresql/run
+while ! [[ -e /etc/service/postgresql/supervise/ok ]]; do
+	sleep 1
+done
 sv start /etc/service/postgresql
 sleep 1
 
