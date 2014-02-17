@@ -1,4 +1,4 @@
-FROM phusion/baseimage:0.9.5
+FROM phusion/baseimage:0.9.6
 MAINTAINER Hongli Lai <hongli@phusion.nl>
 
 ENV HOME /root
