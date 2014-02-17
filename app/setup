@@ -79,6 +79,8 @@ if ! [[ "$databases" =~ appa_prod ]]; then
 fi
 
 # Install gem bundle.
-sudo -u $TARGET_USER -H bundle install --path vendor
+mkdir -p /appa_bundle
+chown $TARGET_USER: /appa_bundle
+sudo -u $TARGET_USER -H bundle install --path /appa_bundle
 cd webui
-sudo -u $TARGET_USER -H bundle install --path ../vendor
+sudo -u $TARGET_USER -H bundle install --path /appa_bundle

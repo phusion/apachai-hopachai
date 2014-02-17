@@ -6,6 +6,7 @@ require 'rails/all'
 # you've limited to :test, :development, or :production.
 Bundler.require(:default, :models, :webui, Rails.env)
 
+I18n.enforce_available_locales = false
 SafeYAML::OPTIONS[:default_mode] = :safe
 
 module ApachaiHopachai
