@@ -1,8 +1,11 @@
 class Ability
   include CanCan::Ability
 
+  attr_reader :user
+
   def initialize(user)
-    user ||= User.new # guest user (not logged in)
+    return nil if user.nil?
+    @user = user
 
     # Define abilities for the passed in user here. For example:
     #
@@ -30,6 +33,27 @@ class Ability
     if user.admin?
       can :manage, :all
       can :read, ActiveAdmin::Page, :name => "Dashboard"
+      return
+    end
+
+    can :manage, [Project, JobSet, Job], :owner_id => user.id
+
+    can :read, Project do |project|
+      project.authorizations.exists?(:user_id => user.id)
+    end
+
+    can :read, JobSet do |job_set|
+      can?(:read, job_set.project)
+    end
+    can :manage, JobSet do |job_set|
+      can?(:manage, job_set.project)
+    end
+
+    can :read, Job do |job|
+      can?(:read, job.job_set.project)
+    end
+    can :manage, Job do |job|
+      can?(:manage, job.job_set.project)
     end
   end
 end

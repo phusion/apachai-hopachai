@@ -1,11 +1,9 @@
 # encoding: utf-8
 require_relative 'command_utils'
-require_relative 'jobset_utils'
 
 module ApachaiHopachai
   class DaemonCommand < Command
     include CommandUtils
-    include JobsetUtils
 
     def self.description
       "Watch a queue directory and process incoming jobs"

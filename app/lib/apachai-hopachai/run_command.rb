@@ -5,7 +5,6 @@ require_relative 'command_utils'
 module ApachaiHopachai
   class RunCommand < Command
     include CommandUtils
-    include JobsetUtils
 
     def self.description
       "Run a test job"
@@ -18,7 +17,7 @@ module ApachaiHopachai
     def self.require_libs
       require 'tmpdir'
       require 'shellwords'
-      require 'safe_yaml'
+      require_relative 'safe_yaml'
       require_relative 'database_models'
     end
 
@@ -67,9 +66,6 @@ module ApachaiHopachai
             abort "Invalid value for --bind-mount"
           end
           @options[:bind_mounts][host_path] = container_path
-        end
-        opts.on("--rerun", "Rerun job if job has already been processed") do
-          @options[:rerun] = true
         end
         opts.on("--daemonize", "-d", "Daemonize into background") do
           @options[:daemonize] = true
@@ -120,20 +116,13 @@ module ApachaiHopachai
         abort "Job with ID #{@argv[0]} not found."
       end
       @job_set = @job.job_set
-
-      abort "Job is already being processed" if @job.state == :processing
-      if @job.processed? && !@options[:rerun]
-        abort "Job has already been processed. Use --rerun if you want to rerun this job"
-      end
+      @project = @job_set.project
     end
 
     def create_work_dir
       @work_dir = Dir.mktmpdir("appa-")
+      Dir.mkdir("#{@work_dir}/input")
       Dir.mkdir("#{@work_dir}/output")
-      # The jobset path can container the ':' character, which Docker does
-      # not allow in -v. So we work around it with symlinks.
-      File.symlink(@job_path, "#{@work_dir}/job")
-      File.symlink(File.dirname(@job_path), "#{@work_dir}/jobset")
     end
 
     def destroy_work_dir
@@ -144,8 +133,9 @@ module ApachaiHopachai
 
     def set_job_processing
       begin
-        @job.update_attributes!(:state => :processing,
-          :start_time => Time.now)
+        @job.set_processing!
+      rescue Job::AlreadyProcessing
+        abort "This job is already being processed."
       rescue ActiveRecord::StaleObjectError
         abort "Another process is currently processing this job."
       end
@@ -154,23 +144,37 @@ module ApachaiHopachai
     def run_job
       @logger.info "Running job ##{@job.number}: #{@job.name}"
       exit_code = run_job_script_and_extract_result
-      @job.end_time = Time.now
       if exit_code == 0
-        @job.state = :succeeded
+        @job.set_succeeded!
       else
-        @job.state = :failed
+        @job.set_failed!
       end
-      @job.save!
     end
 
     def run_job_script_and_extract_result
+      File.open("#{@work_dir}/input/private_key", "w") do |f|
+        f.chmod(0600)
+        f.write(@project.private_key)
+      end
+      File.open("#{@work_dir}/input/project.json", "w") do |f|
+        f.write(@project.to_json)
+      end
+      File.open("#{@work_dir}/input/job_set.json", "w") do |f|
+        f.write(@job_set.to_json)
+      end
+      File.open("#{@work_dir}/input/job.json", "w") do |f|
+        f.write(@job.to_json)
+      end
+      if File.exist?(@job_set.repo_cache_path)
+        File.symlink(@job_set.repo_cache_path, "#{@work_dir}/input/repo.tar.gz")
+      end
+
       command = "#{docker} run -d "
       @options[:bind_mounts].each_pair do |host_path, container_path|
         command << " -v #{Shellwords.escape host_path}:#{Shellwords.escape container_path} "
       end
       command << " -v #{Shellwords.escape ApachaiHopachai::APP_ROOT}:/appa:ro"
-      command << " -v #{Shellwords.escape @work_dir}/job:/job:ro"
-      command << " -v #{Shellwords.escape @work_dir}/jobset:/jobset:ro"
+      command << " -v #{Shellwords.escape @work_dir}/input:/input:ro"
       command << " -v #{Shellwords.escape @work_dir}/output:/output"
       command << " #{SANDBOX_IMAGE_NAME} #{SUPERVISOR_COMMAND} #{SANDBOX_JOB_RUNNER_COMMAND}"
       command << " --dry-run" if @options[:dry_run_test]
@@ -190,7 +194,7 @@ module ApachaiHopachai
           :err => :err,
           :close_others => true)
         # Tell the job runner that it may now continue.
-        File.open("#{@work_dir}/output/continue", "w").close
+        File.open("#{@work_dir}/input/continue", "w").close
 
         # Wait until the container exits.
         exit_code = `#{docker} wait #{@container}`.strip.to_i
@@ -206,7 +210,7 @@ module ApachaiHopachai
 
     def set_job_errored
       begin
-        @job.update_attributes!(:state, :errored)
+        @job.set_errored!
       rescue ActiveRecord::StaleObjectError
         @logger.warn("Unable to set job state to 'errored': job has been concurrently modified.")
       end

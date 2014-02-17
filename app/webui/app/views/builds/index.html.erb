@@ -1,0 +1,18 @@
+<%
+  @title = "All builds - #{@project.long_name}"
+  @project_tab = :all_builds
+%>
+<% content_for :project_content do %>
+  <% if @builds.empty? %>
+    <div class="small-container text-center">
+      <p></p>
+      <p>There are no builds yet. You may manually start a build.</p>
+      <p><%= link_to "Start a build", project_builds_path, :method => "post", :class => "btn btn-default" %></a></p>
+    </div>
+  <% else %>
+    <table>
+      <%= render :partial => 'builds/build_index_item', :collection => @builds, :as => :build %>
+    </table>
+  <% end %>
+<% end %>
+<%= render 'projects/layout' %>

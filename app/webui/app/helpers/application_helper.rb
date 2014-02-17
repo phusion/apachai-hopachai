@@ -12,4 +12,11 @@ module ApplicationHelper
     html.html_safe
   end
 
+  def tab_li(name, value, content)
+    if instance_variable_get("@#{name}") == value
+      options = { :class => "active" }
+    end
+    content_tag(:li, content, options)
+  end
+
 end

@@ -2,60 +2,178 @@
 # encoding: utf-8
 # This tool is run inside the sandbox, to run a job.
 
-ENV['BUNDLE_GEMFILE'] = "/gem_bundle/Gemfile"
-require 'bundler/setup'
-
 Encoding.default_external = Encoding::UTF_8
 Encoding.default_internal = Encoding::UTF_8
 
 require 'logger'
-require 'yaml'
+require 'json'
+require 'fileutils'
 
-def sh(command, *args)
-  puts "$ #{command} #{args.join(' ')}"
-  if !system(command, *args)
-    abort "*** Command failed with code #{$? ? $?.exitstatus : 'unknown'}"
+class JobRunner
+  def start
+    load_input
+    prepare_environment
+    clone_code
+    run_scripts
+    log "Apachai Hopachai finished."
+  end
+
+private
+  def load_input
+    @project = load_json('/input/project.json')
+    @job_set = load_json('/input/job_set.json')
+    @job = load_json('/input/job.json')
+  end
+
+  def prepare_environment
+    File.open("/tmp/git_ssh", "w") do |f|
+      f.chmod(0755)
+      f.puts "#!/bin/sh\n"
+      f.puts "exec ssh -i /input/private_key \"$@\"\n"
+    end
+    ENV['GIT_SSH'] = '/tmp/git_ssh'
+    ENV.update(@job['environment'])
+  end
+
+  def clone_code
+    sh "rm", "-rf", "/home/appa/repo"
+    if File.exist?("/input/repo.tar.gz")
+      # This is a symlink, which might point to a now-removed file. We make
+      # it permanent by first trying to create a hard link for it.
+      begin
+        File.link("/input/repo.tar.gz", "/tmp/repo.tar.gz")
+      rescue Errno::ENOENT
+        # The repo cache file has already been removed. We will clone
+        # the repo ourselves.
+      rescue Errno::EXDEV
+        # The repo cache file exists on another device so we can't make a
+        # hard link. We copy the file.
+        begin
+          FileUtils.cp("/input/repo.tar.gz", "/tmp/repo.tar.gz")
+        rescue Errno::ENOENT
+        end
+      end
+    end
+    if File.exist?("/tmp/repo.tar.gz")
+      sh "mkdir", "-p", "/home/appa/repo"
+      sh "tar", "xzf", "/input/repo.tar.gz", :chdir => "/home/appa/repo"
+    else
+      sh "git", "clone", "--depth=1", @project['repo_url'], "/home/appa/repo"
+    end
+
+    log "cd /home/appa/repo"
+    Dir.chdir("/home/appa/repo")
+
+    if @job_set['git_init_submodules'] && File.exist?(".gitmodules")
+      sh "git", "submodule", "--init", "--recursive"
+    end
+  end
+
+  def run_scripts
+    run_script!('before_install_script')
+    run_script!('install_script')
+    run_script!('before_script')
+
+    result, exit_code = run_main_script
+    case result
+    when :success
+      ENV['TRAVIS_TEST_RESULT'] = exit_code.to_s
+      log "Main script succeeded"
+      run_script!('after_success_script')
+    when :failure
+      ENV['TRAVIS_TEST_RESULT'] = exit_code.to_s
+      log "Main script failed with code #{exit_code ? exit_code : 'unknown'}"
+      run_script!('after_failure_script')
+    when :dont_know_what_to_do
+      log " *** No main script specified in .travis.yml. Please fix your .travis.yml."
+      run_script!('after_failure_script')
+    else
+      raise "Bug: unknown result #{result.inspect} for run_main_script"
+    end
+
+    run_script!('after_script')
+    if result != :success
+      log "CI job failed!"
+      abort
+    end
+  end
+
+  def run_main_script
+    script = @job_set['script']
+    if script.nil? || script.empty?
+      script = default_main_script_for_current_language
+    end
+
+    if script
+      script.each do |command|
+        puts "$ #{command}"
+        system(command)
+        if $?.exitstatus != 0
+          return [:failure, $?.exitstatus]
+        end
+      end
+      [:success, 0]
+    else
+      [:dont_know_what_to_do, nil]
+    end
+  end
+
+  def default_main_script_for_current_language
+    # TODO
+    nil
+  end
+
+  def load_json(filename)
+    File.open(filename, "r") do |f|
+      JSON.load(f)
+    end
+  end
+
+  def sh(command, *args)
+    puts "$ #{command} #{args.join(' ')}"
+    if !system(command, *args)
+      abort "*** Command failed with code #{$? ? $?.exitstatus : 'unknown'}"
+    end
+  end
+
+  def log(message)
+    puts "*** #{message}"
+  end
+
+  def run_script(name)
+    if (script = @job_set[name]) && !script.empty?
+      script.each do |command|
+        puts "$ #{command}"
+        system(command)
+        if $?.exitstatus != 0
+          return $?.exitstatus
+        end
+      end
+      0
+    else
+      nil
+    end
+  end
+
+  def run_script!(name)
+    if (status = run_script(name)) && !status.nil? && status != 0
+      abort "*** Command failed with code #{status ? status : 'unknown'}"
+    end
   end
 end
 
-def log(message)
-  puts "# #{message}"
-end
 
-def run_command_list(commands)
-  return if !commands
-  commands.each do |command|
-    sh command
-  end
-end
-
-def run_script(config)
-  if config['env']
-    sh "env #{config['env']} #{config['script']}"
-  else
-    sh config['script']
-  end
-end
-
-def start
-  config = YAML.load_file('/job/travis.yml')
-  sh "rm", "-rf", "/home/appa/repo"
-  sh "mkdir", "-p", "/home/appa/repo"
-  sh "tar", "xzf", "/jobset/repo.tar.gz", :chdir => "/home/appa/repo"
-  log "cd /home/appa/repo"
-  Dir.chdir("/home/appa/repo")
-  run_command_list(config['before_install'])
-  run_script(config)
-  log "Apachai Hopachai finished."
-end
-
+# Set most important environment variables.
 ENV['TERM'] = 'xterm-256color'
 ENV['LANG'] = ENV['LC_ALL'] = ENV['LC_CTYPE'] = 'C.UTF-8'
+
+# Redirect STDERR to STDOUT. This works around a Docker bug where 'docker logs'
+# reads stdout and stderr from seperate file descriptors, causing stdout/stderr
+# output to be interleaved in some cases.
+STDERR.reopen(STDOUT)
 
 if ARGV[0] == "--dry-run"
   puts "--dry-run given, stopping."
 else
-  Bundler.with_clean_env do
-    start
-  end
+  JobRunner.new.start
 end

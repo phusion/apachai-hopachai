@@ -13,7 +13,4 @@ bash -lc 'rvm --default 2.1.0'
 sudo -u appa -H bash -lc 'rvm --default 2.1.0'
 /usr/local/rvm/bin/rvm cleanup all
 
-mkdir /gem_bundle
-cp /build/Gemfile* /gem_bundle
-cd /gem_bundle
-/usr/local/rvm/bin/rvm-exec 2.1.0 bundle install --path=.
+/usr/local/rvm/bin/rvm-exec 2.1.0 gem install --no-rdoc --no-ri json

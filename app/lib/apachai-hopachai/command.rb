@@ -1,5 +1,6 @@
 # encoding: utf-8
 require 'logger'
+require_relative '../apachai-hopachai'
 
 module ApachaiHopachai
   class Exited < StandardError
@@ -43,8 +44,7 @@ module ApachaiHopachai
 
     def initialize(argv = [])
       @argv   = argv.dup
-      @logger = Logger.new(STDOUT)
-      @logger.level = Logger::INFO
+      @logger = ApachaiHopachai.default_logger
       @exit_status = 0
     end
 

@@ -31,7 +31,8 @@ module ApachaiHopachai
           prepare_job_set
           clone_repo
           extract_repo_info
-          environments = infer_test_environments
+          load_travis_yml
+          environments = calculate_build_matrix
           create_job_set(environments)
         ensure
           destroy_work_dir
@@ -45,9 +46,9 @@ module ApachaiHopachai
 
     def require_libs
       require 'tmpdir'
-      require 'safe_yaml'
       require 'fileutils'
       require 'shellwords'
+      require_relative 'safe_yaml'
       require_relative 'database_models'
     end
 
@@ -59,13 +60,16 @@ module ApachaiHopachai
         opts.banner = "Usage: appa prepare [OPTIONS] OWNER/PROJECT_NAME [COMMIT]"
         opts.separator "Prepare running test jobs on the given git repository."
         opts.separator ""
-        
+
         opts.separator "Options:"
         opts.on("--limit N", Integer, "Limit the number of environments to prepare. Default: prepare all environments") do |val|
           @options[:limit] = val
         end
         opts.on("--before-sha SHA", String, "The SHA of the beginning of the changeset, to display in reports") do |val|
           @options[:before_sha] = val
+        end
+        opts.on("--travis-yml FILENAME", String, "Use the given .travis.yml instead of the one in the repository") do |val|
+          @options[:travis_yml] = val
         end
         opts.on("--daemonize", "-d", "Daemonize into background") do
           @options[:daemonize] = true
@@ -107,9 +111,8 @@ module ApachaiHopachai
         abort "If you set --daemonize then you must also set --log-file."
       end
 
-      begin
-        @project = Project.find_by_owner_and_name(@argv[0])
-      rescue ActiveRecord::RecordNotFound
+      @project = Project.find_by_long_name(@argv[0])
+      if !@project
         abort "Could not find a project with owner and name #{argv[0].inspect}."
       end
       @options[:commit] = @argv[1]
@@ -126,7 +129,7 @@ module ApachaiHopachai
     def prepare_job_set
       @job_set = JobSet.new
       @job_set.project = @project
-      @job_set.before_revision = result['before_sha']
+      @job_set.before_revision = @options[:before_sha]
     end
 
     def clone_repo
@@ -164,67 +167,42 @@ module ApachaiHopachai
         @job_set.subject = lines
     end
 
-    def infer_test_environments
-      config = YAML.load_file("#{@work_dir}/repo/.travis.yml", :safe => true)
-      environments = []
-      traverse_combinations(0, environments, config, COMBINATORIC_KEYS)
-      environments.sort! do |a, b|
-        inspect_env(a) <=> inspect_env(b)
+    def load_travis_yml
+      if @options[:travis_yml]
+        filename = @options[:travis_yml]
+      else
+        filename = "#{@work_dir}/repo/.travis.yml"
       end
-      
-      @logger.info "Inferred #{environments.size} test environments"
-      environments.each do |env|
-        @logger.debug "  #{inspect_env(env)}"
+      @logger.debug("Loading Travis project configuration from #{filename}")
+      @travis = YAML.load_file(filename)
+    end
+
+    def calculate_build_matrix
+      matrix = BuildMatrix.new(@travis)
+      matrix.calculate
+      environments = matrix.environments
+      if @logger.debug?
+        @logger.debug("Calculated build matrix:")
+        environments.each_with_index do |env, i|
+          @logger.debug("  ##{i} -> #{env.inspect}")
+        end
       end
 
       if @options[:limit]
-        @logger.info "Limiting to #{@options[:limit]} environments"
+        @logger.info "Limiting to #{@options[:limit]} environment(s)."
         environments = environments.slice(0, @options[:limit])
       end
 
       environments
     end
 
-    def traverse_combinations(level, environments, current, remaining_combinatoric_keys)
-      indent = "  " * level
-      @logger.debug "#{indent}traverse_combinations: #{remaining_combinatoric_keys.inspect}"
-      remaining_combinatoric_keys = remaining_combinatoric_keys.dup
-      key = remaining_combinatoric_keys.shift
-      if values = current[key]
-        values = [values] if !values.is_a?(Array)
-        values.each do |val|
-          @logger.debug "#{indent}  val = #{val.inspect}"
-          current = current.dup
-          current[key] = val
-          if remaining_combinatoric_keys.empty?
-            @logger.debug "#{indent}  Inferred environment: #{inspect_env(current)}"
-            environments << current
-          else
-            traverse_combinations(level + 1, environments, current, remaining_combinatoric_keys)
-          end
-        end
-      elsif !remaining_combinatoric_keys.empty?
-        traverse_combinations(level, environments, current, remaining_combinatoric_keys)
-      else
-        @logger.debug "#{indent}  Inferred environmentt: #{inspect_env(current)}"
-        environments << current
-      end
-    end
-
-    def inspect_env(env)
-      result = []
-      COMBINATORIC_KEYS.each do |key|
-        if val = env[key]
-          result << "#{key}=#{val}"
-        end
-      end
-      result.join("; ")
-    end
-
     def create_job_set(environments)
+      @job_set.set_properties_from_travis_config(@travis)
+
       environments.each_with_index do |environment, i|
         create_job(@job_set, environment, i + 1)
       end
+
       if @job_set.save
         @logger.info("Created job set with ID #{@job_set.id}. " +
           "It contains #{@job_set.jobs.count} jobs, with IDs #{@job_set.job_ids}")
@@ -235,28 +213,39 @@ module ApachaiHopachai
           @logger.warn("Unable to create repository cache file for job set.")
         end
       else
+        @logger.error "Could not create job set:"
         report_model_errors(@logger, @job_set)
         abort
       end
     end
 
-    def job_set_repo_cache_path
-      "#{job_set_path}/repo.tar.gz"
-    end
-
     def create_job_set_repo_cache
-      @logger.debug "Creating archive #{job_set_repo_cache_path}"
-      system("env", "GZIP=-3", "tar", "-czf", job_set_repo_cache_path,
-        ".", :chdir => "#{@work_dir}/repo")
+      @logger.debug "Creating archive #{@job_set.repo_cache_path}"
+      parent_dir = File.dirname(@job_set.repo_cache_path)
+      if !File.exist?(parent_dir)
+        begin
+          Dir.mkdir(parent_dir, 0700)
+        rescue Errno::EEXIST
+        end
+      end
+      result = system("env", "GZIP=-3", "tar", "-czf",
+        "#{@job_set.repo_cache_path}.tmp", ".", :chdir => "#{@work_dir}/repo")
+      if result
+        File.rename("#{@job_set.repo_cache_path}.tmp", @job_set.repo_cache_path)
+      else
+        false
+      end
     end
 
     def create_job(job_set, environment, number)
-      @logger.info "Preparing job ##{number}: #{inspect_env(env)}"
-      job = job_set.build
+      name = BuildMatrix.environment_display_name(environment)
+      @logger.info "Preparing job ##{number}: #{name}"
+      job = job_set.jobs.build
       job.number = number
-      job.name = inspect_env(environment)
+      job.name = name
       job.environment = environment
       if !job.valid?
+        @logger.error "Could not create job #{number}:"
         report_model_errors(@logger, job)
         abort
       end

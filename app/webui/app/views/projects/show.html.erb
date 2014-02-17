@@ -1,0 +1,12 @@
+<%
+  @title = "Latest build - #{@project.long_name}"
+  @project_tab = :latest_build
+%>
+<% content_for :project_content do %>
+  <% if @latest_build %>
+    <%= render :partial => 'build/build', :locals => { :build => @latest_build } %>
+  <% else %>
+    <%= render :partial => 'initial_setup' %>
+  <% end %>
+<% end %>
+<%= render 'projects/layout' %>

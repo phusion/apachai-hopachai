@@ -1,5 +1,7 @@
 class HomeController < ApplicationController
+  skip_authorization_check :only => :index
+
   def index
-    @users = User.all
+    @projects = Project.accessible_by(current_ability, :read)
   end
 end

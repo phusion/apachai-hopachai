@@ -10,6 +10,7 @@ group :models do
   gem 'schema_plus'
   gem 'simple_enum'
   gem 'default_value_for'
+  gem 'acts_as_list'
 end
 
 group :cli do

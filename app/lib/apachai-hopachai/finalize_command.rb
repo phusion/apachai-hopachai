@@ -15,7 +15,6 @@ module ApachaiHopachai
     end
 
     def self.require_libs
-      require 'safe_yaml'
       require 'ansi2html/main'
       require 'mail'
       require 'erb'
@@ -37,7 +36,8 @@ module ApachaiHopachai
 
     def start
       parse_argv
-      read_and_verify_jobset
+      load_job_set
+      mark_finalized
       generate_report
       send_notification
       save_report
@@ -49,7 +49,7 @@ module ApachaiHopachai
       require 'optparse'
       OptionParser.new do |opts|
         nl = "\n#{' ' * 37}"
-        opts.banner = "Usage: appa finalize [OPTIONS] JOBSET_PATH"
+        opts.banner = "Usage: appa finalize [OPTIONS] JOBSET_ID"
         opts.separator "Run this on a jobset in which all jobs are completed. It will mark the entire jobset as complete."
         opts.separator ""
         
@@ -97,43 +97,32 @@ module ApachaiHopachai
         self.class.help
         exit 1
       end
-
-      @jobset_path = File.expand_path(@argv[0])
     end
 
-    def read_and_verify_jobset
-      abort "The given jobset does not exist" if !File.exist?(@jobset_path)
-      abort "The given jobset is not complete" if !File.exist?("#{@jobset_path}/info.yml")
-      @jobset_info = YAML.load_file("#{@jobset_path}/info.yml", :safe => true)
-      if @jobset_info['file_version'] != '1.0'
-        abort "job format version #{@jobset_info['file_version']} is unsupported"
+    def load_job_set
+      begin
+        @job_set = JobSet.find(@argv[0])
+      rescue ActiveRecord::RecordNotFound
+        abort "Job set #{@argv[0]} found not."
       end
-      
-      @jobs = []
-      Dir["#{@jobset_path}/*.appa-job"].each do |job_path|
-        if job_processed?(job_path)
-          @jobs << {
-            :path   => job_path,
-            :info   => YAML.load_file("#{job_path}/info.yml", :safe => true),
-            :result => YAML.load_file("#{job_path}/result.yml", :safe => true)
-          }
-        else
-          abort "job #{job_path} has not yet finished processing"
-        end
+
+      @jobs = @job_set.jobs.to_a
+
+      if @jobs.any? { |job| !job.processed? }
+        abort "Job #{@job_set.id} has not yet finished processing."
       end
-      @jobs.sort! { |a, b| a[:info]['id'] <=> b[:info]['id'] }
     end
 
-    def job_processed?(job_path)
-      File.exist?("#{job_path}/result.yml")
+    def mark_finalized
+      @job_set.update_attributes!(:state, :finalized)
     end
 
     def generate_report
       @jobs.each do |job|
-        log = File.open("#{job[:path]}/output.log", "rb") { |f| f.read }
+        log = File.open(job.log_file_path, "rb") { |f| f.read }
         html_log = StringIO.new
         ANSI2HTML::Main.new(log, html_log)
-        job[:html_log] = html_log.string.force_encoding('utf-8')
+        html_log = html_log.string.force_encoding('utf-8')
       end
 
       template = ERB.new(File.open("#{RESOURCES_DIR}/report.html.erb", "r") { |f| f.read })
@@ -165,7 +154,6 @@ module ApachaiHopachai
       File.open(report_filename, "wb") do |f|
         f.write(@report)
       end
-      File.open("#{@jobset_path}/finalized", "w").close
     end
 
     def report_filename

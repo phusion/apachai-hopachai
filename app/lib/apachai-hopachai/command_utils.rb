@@ -142,5 +142,11 @@ module ApachaiHopachai
       words << "#{minutes} min " if minutes > 0
       words << "#{seconds} sec"
     end
+
+    def report_model_errors(logger, model)
+      model.errors.full_messages.each do |message|
+        logger.error(" * #{message}")
+      end
+    end
   end
 end

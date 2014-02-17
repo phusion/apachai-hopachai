@@ -9,5 +9,20 @@
  * compiled file, but it's generally better to create a new file per style scope.
  *
  *= require_self
- *= require_tree .
+ *= require "framework_and_overrides"
+ *= require "home"
  */
+
+.container {
+  max-width: 900px;
+}
+
+.small-container {
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.text-center {
+  text-align: center;
+}

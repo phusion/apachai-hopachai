@@ -1,0 +1,11 @@
+<h1><%= link_to @project.owner.username, @project.owner %>/<%= link_to @project.name, project_model_path(@project) %></h1>
+
+<ul class="nav nav-tabs">
+  <%= tab_li(:project_tab, :latest_build, link_to("Latest Build", project_model_path(@project))) %>
+  <%= tab_li(:project_tab, :all_builds, link_to("All Builds", project_model_builds_path(@project))) %>
+  <% if can?(:write, @project) %>
+    <%= tab_li(:project_tab, :settings, link_to("Settings", project_model_settings_path(@project))) %>
+  <% end %>
+</ul>
+
+<%= yield :project_content %>

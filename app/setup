@@ -35,7 +35,7 @@ if ! [[ -e /etc/apt/sources.list.d/docker.list ]]; then
 fi
 
 # Install software.
-apt_get_install lxc-docker git postfix inotify-tools libpq-dev postgresql
+apt_get_install lxc-docker cgroup-lite git postfix inotify-tools libpq-dev postgresql
 
 # Setup Docker.
 usermod -a -G docker $TARGET_USER

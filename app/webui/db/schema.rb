@@ -31,6 +31,7 @@ ActiveRecord::Schema.define(version: 20140217105429) do
   end
 
   create_table "users", force: true do |t|
+    t.string   "username",                               null: false
     t.string   "email",                  default: "",    null: false
     t.string   "encrypted_password",     default: "",    null: false
     t.string   "reset_password_token"
@@ -41,12 +42,12 @@ ActiveRecord::Schema.define(version: 20140217105429) do
     t.datetime "last_sign_in_at"
     t.string   "current_sign_in_ip"
     t.string   "last_sign_in_ip"
-    t.string   "name",                                   null: false
     t.boolean  "admin",                  default: false, null: false
     t.datetime "created_at",                             null: false
     t.datetime "updated_at",                             null: false
     t.index ["email"], :name => "index_users_on_email", :unique => true
     t.index ["reset_password_token"], :name => "index_users_on_reset_password_token", :unique => true
+    t.index ["username"], :name => "index_users_on_username", :unique => true
   end
 
   create_table "projects", force: true do |t|
@@ -55,49 +56,66 @@ ActiveRecord::Schema.define(version: 20140217105429) do
     t.string   "repo_url",    null: false
     t.datetime "created_at",  null: false
     t.datetime "updated_at",  null: false
+    t.string   "webhook_key", null: false
     t.text     "public_key",  null: false
     t.text     "private_key", null: false
     t.index ["owner_id"], :name => "fk__projects_owner_id"
     t.foreign_key ["owner_id"], "users", ["id"], :on_update => :cascade, :on_delete => :no_action, :name => "fk_projects_owner_id"
   end
 
+  create_table "authorizations", force: true do |t|
+    t.integer "user_id",                    null: false
+    t.integer "project_id",                 null: false
+    t.boolean "admin",      default: false, null: false
+    t.index ["project_id"], :name => "fk__authorizations_project_id"
+    t.index ["user_id"], :name => "fk__authorizations_user_id"
+    t.foreign_key ["project_id"], "projects", ["id"], :on_update => :cascade, :on_delete => :cascade, :name => "fk_authorizations_project_id"
+    t.foreign_key ["user_id"], "users", ["id"], :on_update => :cascade, :on_delete => :cascade, :name => "fk_authorizations_user_id"
+  end
+
   create_table "job_sets", force: true do |t|
     t.integer  "project_id",                           null: false
     t.string   "state_cd",                             null: false
+    t.integer  "number",                               null: false
     t.datetime "created_at",                           null: false
     t.string   "revision",                             null: false
-    t.string   "before_revision",                      null: false
+    t.string   "before_revision"
     t.string   "branch"
     t.string   "tag"
     t.string   "author_name",                          null: false
     t.string   "author_email",                         null: false
+    t.string   "committer_name",                       null: false
+    t.string   "committer_email",                      null: false
     t.string   "subject",                              null: false
     t.string   "language"
     t.text     "bundler_args"
     t.boolean  "init_git_submodules",   default: true, null: false
-    t.text     "before_install_script"
-    t.text     "install_script"
-    t.text     "before_script"
-    t.text     "script"
-    t.text     "after_success_script"
-    t.text     "after_failure_script"
-    t.text     "after_script"
+    t.text     "before_install_script",                null: false
+    t.text     "install_script",                       null: false
+    t.text     "before_script",                        null: false
+    t.text     "script",                               null: false
+    t.text     "after_success_script",                 null: false
+    t.text     "after_failure_script",                 null: false
+    t.text     "after_script",                         null: false
     t.index ["project_id"], :name => "fk__job_sets_project_id"
     t.foreign_key ["project_id"], "projects", ["id"], :on_update => :cascade, :on_delete => :cascade, :name => "fk_job_sets_project_id"
   end
 
   create_table "jobs", force: true do |t|
-    t.integer  "job_set_id",    null: false
-    t.string   "state_cd",      null: false
-    t.integer  "number",        null: false
-    t.string   "name",          null: false
-    t.string   "log_file_path", null: false
+    t.integer  "job_set_id",     null: false
+    t.string   "state_cd",       null: false
+    t.integer  "number",         null: false
+    t.string   "name",           null: false
+    t.string   "log_file_name",  null: false
+    t.string   "lock_file_name", null: false
+    t.integer  "worker_pid"
     t.integer  "lock_version"
-    t.datetime "created_at",    null: false
-    t.text     "environment"
+    t.datetime "created_at",     null: false
+    t.text     "environment",    null: false
     t.datetime "start_time"
     t.datetime "end_time"
     t.index ["job_set_id"], :name => "fk__jobs_job_set_id"
+    t.index ["state_cd"], :name => "jobs_processing", :conditions => "((state_cd)::text = 'processing'::text)"
     t.foreign_key ["job_set_id"], "job_sets", ["id"], :on_update => :cascade, :on_delete => :cascade, :name => "fk_jobs_job_set_id"
   end
 

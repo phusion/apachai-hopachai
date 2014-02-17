@@ -5,6 +5,28 @@
 #
 #   cities = City.create([{ name: 'Chicago' }, { name: 'Copenhagen' }])
 #   Mayor.create(name: 'Emanuel', city: cities.first)
-puts 'DEFAULT USERS'
-user = User.find_or_create_by_email :name => ENV['ADMIN_NAME'].dup, :email => ENV['ADMIN_EMAIL'].dup, :password => ENV['ADMIN_PASSWORD'].dup, :password_confirmation => ENV['ADMIN_PASSWORD'].dup
-puts 'user: ' << user.name
+
+if !User.exists?(:username => 'admin')
+  User.create!(
+    :username => 'admin',
+    :email => 'admin@example.com',
+    :admin => true,
+    :password => 'password',
+    :password_confirmation => 'password')
+end
+if Rails.env.development?
+  passenger = Project.create!(:owner => User.find_by(:username => 'admin'),
+    :name => 'passenger',
+    :repo_url => 'https://github.com/phusion/passenger.git')
+  guest = User.create!(
+    :username => 'guest',
+    :email => 'guest@example.com',
+    :password => 'password',
+    :password_confirmation => 'password')
+  collaborator = User.create!(
+    :username => 'collaborator',
+    :email => 'collaborator@example.com',
+    :password => 'password',
+    :password_confirmation => 'password')
+  passenger.authorizations.create!(:user => collaborator)
+end

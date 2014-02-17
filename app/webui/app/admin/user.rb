@@ -1,11 +1,11 @@
 ActiveAdmin.register User do
-  permit_params :email, :password, :password_confirmation
+  permit_params :username, :email, :admin, :password, :password_confirmation
 
   index do
     selectable_column
     id_column
+    column :username
     column :email
-    column :name
     column :admin?
     actions
   end
@@ -16,8 +16,10 @@ ActiveAdmin.register User do
   filter :created_at
 
   form do |f|
-    f.inputs "Admin Details" do
+    f.inputs "User Details" do
+      f.input :username
       f.input :email
+      f.input :admin
       f.input :password
       f.input :password_confirmation
     end
