@@ -77,3 +77,5 @@ fi
 
 # Install gem bundle.
 sudo -u $TARGET_USER -H bundle install --path vendor
+cd webui
+sudo -u $TARGET_USER -H bundle install --path ../vendor
