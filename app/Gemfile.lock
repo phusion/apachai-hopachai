@@ -161,7 +161,6 @@ GEM
       polyamorous (~> 0.6.0)
     responders (1.0.0)
       railties (>= 3.2, < 5)
-    rolify (3.4.0)
     rspec-core (2.14.7)
     rspec-expectations (2.14.5)
       diff-lcs (>= 1.1.3, < 2.0)
@@ -241,7 +240,6 @@ DEPENDENCIES
   quiet_assets
   rails (~> 4.0.2)
   rails_layout
-  rolify
   rspec-rails
   safe_yaml
   sass-rails (~> 4.0.0)

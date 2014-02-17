@@ -7,7 +7,6 @@ group :models do
   gem 'pg'
   gem 'cancan'
   gem 'devise'
-  gem 'rolify'
   gem 'schema_plus'
   gem 'simple_enum'
   gem 'default_value_for'

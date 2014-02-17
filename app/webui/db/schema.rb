@@ -58,9 +58,9 @@ ActiveRecord::Schema.define(version: 20140217105429) do
     t.datetime "last_sign_in_at"
     t.string   "current_sign_in_ip"
     t.string   "last_sign_in_ip"
+    t.string   "name",                                null: false
     t.datetime "created_at",                          null: false
     t.datetime "updated_at",                          null: false
-    t.string   "name"
     t.index ["email"], :name => "index_users_on_email", :unique => true
     t.index ["reset_password_token"], :name => "index_users_on_reset_password_token", :unique => true
   end
@@ -115,26 +115,6 @@ ActiveRecord::Schema.define(version: 20140217105429) do
     t.datetime "end_time"
     t.index ["job_set_id"], :name => "fk__jobs_job_set_id"
     t.foreign_key ["job_set_id"], "job_sets", ["id"], :on_update => :cascade, :on_delete => :cascade, :name => "fk_jobs_job_set_id"
-  end
-
-  create_table "roles", force: true do |t|
-    t.string   "name"
-    t.integer  "resource_id"
-    t.string   "resource_type"
-    t.datetime "created_at",    null: false
-    t.datetime "updated_at",    null: false
-    t.index ["name", "resource_type", "resource_id"], :name => "index_roles_on_name_and_resource_type_and_resource_id"
-    t.index ["name"], :name => "index_roles_on_name"
-  end
-
-  create_table "users_roles", id: false, force: true do |t|
-    t.integer "user_id"
-    t.integer "role_id"
-    t.index ["role_id"], :name => "fk__users_roles_role_id"
-    t.index ["user_id", "role_id"], :name => "index_users_roles_on_user_id_and_role_id"
-    t.index ["user_id"], :name => "fk__users_roles_user_id"
-    t.foreign_key ["role_id"], "roles", ["id"], :on_update => :no_action, :on_delete => :no_action, :name => "fk_users_roles_role_id"
-    t.foreign_key ["user_id"], "users", ["id"], :on_update => :no_action, :on_delete => :no_action, :name => "fk_users_roles_user_id"
   end
 
 end
