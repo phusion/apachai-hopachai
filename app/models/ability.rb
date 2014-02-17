@@ -26,5 +26,10 @@ class Ability
     #   can :update, Article, :published => true
     #
     # See the wiki for details: https://github.com/ryanb/cancan/wiki/Defining-Abilities
+    
+    if user.admin?
+      can :manage, :all
+      can :read, ActiveAdmin::Page, :name => "Dashboard"
+    end
   end
 end
