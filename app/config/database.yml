@@ -1,3 +1,19 @@
+<% if ENV['DB_HOST'] %>
+default_settings: &default_settings
+  adapter: postgresql
+  database: <%= ENV['DB_NAME'] %>
+  host: <%= ENV['DB_HOST'] %>
+  username: <%= ENV['DB_USERNAME'] %>
+  password: <%= ENV['DB_PASSWORD'] %>
+  pool: 5
+  timeout: 5000
+
+development:
+  <<: *default_settings
+
+production:
+  <<: *default_settings
+<% else %>
 development:
   adapter: postgresql
   database: appa_dev
@@ -15,3 +31,4 @@ production:
   database: appa_prod
   pool: 5
   timeout: 5000
+<% end %>
