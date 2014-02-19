@@ -97,6 +97,7 @@ private
         :err => :err,
         :close_others => true)
       b.close
+      a.binmode
       done = yield(pid, a)
     ensure
       a.close if a && !a.closed?
@@ -111,7 +112,7 @@ private
 
   def timed_readline(io, timeout)
     if IO.select([io], nil, nil, timeout)
-      io.readline
+      io.readline.force_encoding('utf-8').scrub
     else
       nil
     end

@@ -82,10 +82,7 @@ class Job < ActiveRecord::Base
 
   def read_log_file
     File.open(log_file_path, "rb") do |f|
-      f.read.encode("utf-8", "binary",
-        :invalid => :replace,
-        :undef => :replace,
-        :universal_newline => true)
+      f.read.force_encoding("utf-8").scrub
     end
   end
 
