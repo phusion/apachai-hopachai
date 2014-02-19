@@ -1,5 +1,8 @@
 <tr>
-  <td><%= link_to "##{job.number}", job_model_path(job) %></td>
+  <td>
+    <span class="job-icon <%= job.status_css_class %>"></span>
+    <%= link_to job.long_number, job_model_path(job) %>
+  </td>
   <td><%= link_to job.public_environment_string, job_model_path(job) %></td>
   <td><%= job.running_time %></td>
 </tr>

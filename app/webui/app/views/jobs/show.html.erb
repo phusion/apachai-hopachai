@@ -1,0 +1,17 @@
+<%
+  @title = "Job ##{@job.long_number} - #{@project.long_name}"
+  if @job.part_of_latest_build?
+    @project_tab = :latest_build
+  else
+    @project_tab = :build_history
+  end
+%>
+<% content_for :project_content do %>
+  <p></p>
+  <%= link_to build_model_path(@build), :class => "btn btn-default btn-sm" do %>
+    <span class="glyphicon glyphicon-arrow-left"></span> Show build #<%= @job.job_set.number %>
+  <% end %>
+  <h1>Job <%= @job.long_number %></h1>
+  <pre><%= @job.read_log_file %></pre>
+<% end %>
+<%= render 'projects/layout' %>

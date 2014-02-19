@@ -28,6 +28,10 @@ class JobSet < ActiveRecord::Base
     state == :succeeded || state == :failed || state == :errored
   end
 
+  def is_latest_build?
+    id == project.job_sets.first.id
+  end
+
   def repo_cache_path
     if new_record?
       nil

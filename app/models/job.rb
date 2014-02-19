@@ -28,8 +28,29 @@ class Job < ActiveRecord::Base
     job_set.project
   end
 
+  def long_number
+    "#{job_set.number}.#{number}"
+  end
+
+  def part_of_latest_build?
+    job_set.is_latest_build?
+  end
+
   def processed?
     state == :succeeded || state == :failed || state == :errored
+  end
+
+  def status_css_class
+    case state
+    when :unprocessed, :processing
+      "job-unprocessed"
+    when :succeeded
+      "job-succeeded"
+    when :failed
+      "job-failed"
+    when :errored
+      "job-errored"
+    end
   end
 
   def public_environment_string
@@ -56,6 +77,15 @@ class Job < ActiveRecord::Base
       "#{job_logs_path}/#{log_file_name}"
     else
       nil
+    end
+  end
+
+  def read_log_file
+    File.open(log_file_path, "rb") do |f|
+      f.read.encode("utf-8", "binary",
+        :invalid => :replace,
+        :undef => :replace,
+        :universal_newline => true)
     end
   end
 
