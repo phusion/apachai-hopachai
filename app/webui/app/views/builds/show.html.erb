@@ -1,9 +1,9 @@
 <%
   @title = "Build ##{@build.number} - #{@project.long_name}"
   if @build.is_latest_build?
-  	@project_tab = :latest_build
+    @project_tab = :latest_build
   else
-  	@project_tab = :build_history
+    @project_tab = :build_history
   end
 %>
 <% content_for :project_content do %>

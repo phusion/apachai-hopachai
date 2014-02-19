@@ -7,5 +7,5 @@ if [ -d /var/run/postgresql ]; then
 else
     install -d -m 2775 -o postgres -g postgres /var/run/postgresql
 fi
-exec sudo -u postgres -H /usr/lib/postgresql/9.1/bin/postgres -D /var/lib/postgresql/9.1/main \
+exec /sbin/setuser postgres /usr/lib/postgresql/9.1/bin/postgres -D /var/lib/postgresql/9.1/main \
 	-c config_file=/etc/postgresql/9.1/main/postgresql.conf

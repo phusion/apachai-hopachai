@@ -6,7 +6,10 @@ class ApplicationController < ActionController::Base
   check_authorization :unless => :devise_or_active_admin_controller?
 
   rescue_from CanCan::AccessDenied do |exception|
-    redirect_to root_path, :alert => exception.message
+    respond_to do |format|
+      format.html { redirect_to root_path, :alert => exception.message }
+      format.json { render :json => { :status => "error", :message => "Access denied." } }
+    end
   end
 
 private

@@ -4,12 +4,13 @@ class BuildWorker
   include Sidekiq::Worker
   sidekiq_options :retry => 5
 
-  def perform_async(params)
+  def perform(project_id, params)
+    project = Project.find(project_id)
     Dir.mktmpdir do |path|
       command = [
         "#{ApachaiHopachai::BIN_DIR}/appa",
         "prepare",
-        @project.long_name
+        project.long_name
       ]
       head_sha = params['after'] || params['head']
       if head_sha
@@ -24,7 +25,7 @@ class BuildWorker
 
       if system(*command)
         build_id = File.read("#{path}/id.txt")
-        build = Build.find(build_id)
+        build = JobSet.find(build_id)
         build.jobs.each do |job|
           JobWorker.perform_async(job.id)
         end

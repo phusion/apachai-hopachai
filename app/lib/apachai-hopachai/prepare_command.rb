@@ -71,6 +71,9 @@ module ApachaiHopachai
         opts.on("--travis-yml FILENAME", String, "Use the given .travis.yml instead of the one in the repository") do |val|
           @options[:travis_yml] = val
         end
+        opts.on("--id-file FILENAME", String, "Write the job set ID to the given file") do |val|
+          @options[:id_file] = val
+        end
         opts.on("--daemonize", "-d", "Daemonize into background") do
           @options[:daemonize] = true
         end
@@ -206,6 +209,7 @@ module ApachaiHopachai
       if @job_set.save
         @logger.info("Created job set with ID #{@job_set.id}. " +
           "It contains #{@job_set.jobs.count} jobs, with IDs #{@job_set.job_ids}")
+        create_id_file
         @logger.info("Creating repo cache...")
         if create_job_set_repo_cache
           @logger.info("Repo cache created.")
@@ -216,6 +220,14 @@ module ApachaiHopachai
         @logger.error "Could not create job set:"
         report_model_errors(@logger, @job_set)
         abort
+      end
+    end
+
+    def create_id_file
+      if path = @options[:id_file]
+        File.open(path, "w") do |f|
+          f.write(@job_set.id.to_s)
+        end
       end
     end
 

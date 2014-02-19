@@ -1,21 +1,28 @@
 class ProjectsController < ApplicationController
   before_filter :fetch_project
+  before_filter :authorize_project
 
   include CustomUrlHelper
 
   def show
-    begin
-      authorize! :read, @project
-    rescue CanCan::AccessDenied
-      logger.warn "Access denied to project."
-      render_project_not_found
-      return
-    end
-
     if latest_build = @project.job_sets.first
       redirect_to build_model_path(latest_build)
     else
       @wait_for_build = params[:wait_for_build]
     end
+  end
+
+  def settings
+    render
+  end
+
+  def destroy
+    @project.destroy
+    redirect_to root_path, :notice => "Project #{@project.long_name} deleted."
+  end
+
+private
+  def authorize_project(authorization = :write)
+    super(authorization)
   end
 end

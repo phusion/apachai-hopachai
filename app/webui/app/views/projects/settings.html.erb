@@ -1,0 +1,12 @@
+<%
+  @title = "Settings - #{@project.long_name}"
+  @project_tab = :settings
+%>
+<% content_for :project_content do %>
+  <h2>Manually start a build</h2>
+  <p><%= link_to "Start a build", project_model_builds_path(@project), :method => "post", :class => "btn btn-default" %></a></p>
+
+  <h2>Delete project</h2>
+  <p><%= link_to "Delete project (DANGEROUS)", project_model_path(@project), :method => "delete", :class => "btn btn-danger", :confirm => "Really? There is no going back!" %></a></p>
+<% end %>
+<%= render 'projects/layout' %>

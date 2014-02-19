@@ -7,7 +7,7 @@
     <div class="small-container text-center">
       <p></p>
       <p>There are no builds yet. You may manually start a build.</p>
-      <p><%= link_to "Start a build", project_builds_path, :method => "post", :class => "btn btn-default" %></a></p>
+      <p><%= link_to "Start a build", project_model_builds_path(@project), :method => "post", :class => "btn btn-default" %></a></p>
     </div>
   <% else %>
     <p></p>

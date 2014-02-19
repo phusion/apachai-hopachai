@@ -232,11 +232,11 @@ private
   # called. To avoid a failure in those concurrent scenarios, we protect job lock operations
   # with an internal lock.
   def internal_lock
-    connection.execute("SELECT pg_advisory_lock(#{INTERNAL_LOCK_ID})")
+    self.class.connection.execute("SELECT pg_advisory_lock(#{INTERNAL_LOCK_ID})")
     begin
       yield
     ensure
-      connection.execute("SELECT pg_advisory_unlock(#{INTERNAL_LOCK_ID})")
+      self.class.connection.execute("SELECT pg_advisory_unlock(#{INTERNAL_LOCK_ID})")
     end
   end
 
@@ -247,7 +247,7 @@ private
   # Only use within an `internal_lock` block!
   def try_lock_job
     raise "Job already locked" if owns_job_lock?
-    result = connection.select_one("SELECT pg_try_advisory_lock(#{job_lock_id}) AS result")
+    result = self.class.connection.select_one("SELECT pg_try_advisory_lock(#{job_lock_id}) AS result")
     if result["result"] == "t"
       @owns_job_lock = true
       true
@@ -259,7 +259,7 @@ private
   # Only use within an `internal_lock` block!
   def unlock_job
     raise "Not already locked" if !owns_job_lock?
-    connection.execute("SELECT pg_advisory_unlock(#{job_lock_id})")
+    self.class.connection.execute("SELECT pg_advisory_unlock(#{job_lock_id})")
     @owns_job_lock = nil
   end
 

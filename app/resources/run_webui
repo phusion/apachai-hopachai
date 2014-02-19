@@ -4,9 +4,8 @@ source /etc/environment
 user=`stat -L --printf %U /appa`
 cd /appa/webui
 export RAILS_ENV=${RAILS_ENV:-development}
-export HOME=/home/$user
-status=`chpst -u $user passenger status`
+status=`/sbin/setuser $user passenger status`
 if echo "$status" | grep -q "is running"; then
-	chpst -u $user passenger stop
+	/sbin/setuser $user passenger stop
 fi
-exec chpst -u $user passenger start -e $RAILS_ENV
+exec /sbin/setuser $user passenger start -e $RAILS_ENV

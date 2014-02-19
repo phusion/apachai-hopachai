@@ -53,6 +53,8 @@ apt_get_install ruby2.1 ruby2.1-dev ruby-switch nodejs runit wget nginx-extras p
 ruby-switch --set ruby2.1
 gem install bundler rake --no-rdoc --no-ri
 
+cp app/resources/setuser /sbin/
+
 if ! [[ -e /appa ]]; then
 	ln -s /vagrant/app /appa
 fi

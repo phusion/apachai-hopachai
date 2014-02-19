@@ -2,4 +2,11 @@
 set -e
 source /etc/environment
 user=`stat -L --printf %U /appa`
-exec chpst -u $user /appa/bin/sidekiq
+cd /appa/webui
+export JOB_CONCURRENCY=${RAILS_ENV:-2}
+export RAILS_ENV=${RAILS_ENV:-development}
+exec /sbin/setuser $user /appa/bin/sidekiq \
+	-c $JOB_CONCURRENCY \
+	-l log/sidekiq.log \
+	-e $RAILS_ENV \
+	>>log/sidekiq.log 2>&1

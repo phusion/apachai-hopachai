@@ -19,12 +19,16 @@ class BuildsController < ApplicationController
       format.html do
         verify_authenticity_token
         return if performed?
+
         authenticate_user!
         return if performed?
-        BuildWorker.perform_async(params)
+
+        authorize! :create_build, @project
+        BuildWorker.perform_async(@project.id, params)
         redirect_to project_model_path(@project, :wait_for_build => 1)
       end
       format.json do
+        authorize! :create_build, @project
         if check_webhook_key
           BuildWorker.perform_async(params)
         else
