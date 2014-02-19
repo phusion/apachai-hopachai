@@ -2,10 +2,12 @@
 # encoding: utf-8
 abort "This tool must be run in Ruby 1.9" if RUBY_VERSION <= '1.9'
 
-root = File.expand_path(File.dirname(__FILE__) + "/..")
+require 'pathname'
+root = Pathname.new(File.dirname(__FILE__) + "/..").realpath
 $LOAD_PATH.unshift("#{root}/lib")
 ENV['BUNDLE_GEMFILE'] = "#{root}/Gemfile"
 require 'bundler'
 Bundler.setup(:default, :worker, :models)
 require 'apachai-hopachai'
+Dir.chdir("#{ApachaiHopachai::APP_ROOT}/webui")
 load Gem.bin_path('sidekiq', 'sidekiq', ">= 0")

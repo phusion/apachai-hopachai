@@ -1,0 +1,5 @@
+#!/bin/bash
+set -e
+source /etc/environment
+user=`stat -L --printf %U /appa`
+exec chpst -u $user /appa/bin/sidekiq

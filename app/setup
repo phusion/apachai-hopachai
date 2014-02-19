@@ -52,6 +52,13 @@ apt_get_install lxc-docker cgroup-lite git postfix inotify-tools libpq-dev postg
 # Setup Docker.
 usermod -a -G docker $TARGET_USER
 
+# Setup environment.
+if [[ $TARGET_USER != vagrant ]]; then
+	if ! grep -q RAILS_ENV /etc/environment; then
+		echo RAILS_ENV=production >> /etc/environment
+	fi
+fi
+
 # Setup PostgreSQL service.
 update-rc.d -f postgresql remove
 if ! [[ -e /etc/service/postgresql/run ]]; then
@@ -106,6 +113,17 @@ chown $TARGET_USER: /appa_bundle
 sudo -u $TARGET_USER -H bundle install --path /appa_bundle
 cd webui
 sudo -u $TARGET_USER -H bundle install --path /appa_bundle
+cd ..
+
+# Setup Sidekiq.
+mkdir -p /etc/service/sidekiq
+cp resources/run_sidekiq /etc/service/sidekiq/run
+start_runit_service sidekiq
+
+# Setup app server.
+mkdir -p /etc/service/webui
+cp resources/run_webui /etc/service/webui/run
+start_runit_service webui
 
 # Shut down all daemons before exiting 'docker build'.
 if [[ $TARGET_USER != vagrant ]]; then
