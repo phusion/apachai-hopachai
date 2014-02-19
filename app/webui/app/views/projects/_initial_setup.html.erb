@@ -33,6 +33,7 @@
   </p>
   <ul class="nav nav-pills">
     <li class="active"><a href="#webhook_github" data-toggle="pill">Github</a></li>
+    <li class="active"><a href="#webhook_github" data-toggle="pill">Gitlab</a></li>
     <li><a href="#webhook_other" data-toggle="pill">Other</a></li>
   </ul>
 
@@ -43,10 +44,14 @@
       <p>Go to your Github project settings and add the following webhook URL:</p>
       <pre><%= project_builds_url(:webhook_key => @project.webhook_key) %></pre>
     </div>
+    <div class="tab-pane active" id="webhook_gitlab">
+      <p>Go to your Gitlab project settings and add the following webhook URL:</p>
+      <pre><%= project_builds_url(:webhook_key => @project.webhook_key) %></pre>
+    </div>
     <div class="tab-pane" id="webhook_other">
       <p>Ensure that every time you push to your Git repository, a request is POSTed to the following webhook URL:</p>
       <pre><%= project_builds_url(:webhook_key => @project.webhook_key) %></pre>
-      <p>The POST data should follow <a href="">the Github webhook format</a>. If it doesn't, Apachai Hopachai will only create builds for the latest <code>master</code> branch commit.</p>
+      <p>The POST payload should follow <a href="http://developer.github.com/v3/activity/events/types/#pushevent">the Github webhook format</a> or <a href="http://demo.gitlab.com/help/web_hooks">the Gitlab webhook format</a>. If it doesn't, Apachai Hopachai will only create builds for the latest <code>master</code> branch commit.</p>
     </div>
   </div>
 
