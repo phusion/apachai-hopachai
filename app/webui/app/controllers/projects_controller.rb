@@ -1,6 +1,8 @@
 class ProjectsController < ApplicationController
   before_filter :fetch_project
 
+  include CustomUrlHelper
+
   def show
     begin
       authorize! :read, @project
@@ -10,7 +12,10 @@ class ProjectsController < ApplicationController
       return
     end
 
-    @latest_build = @project.job_sets.first
-    @wait_for_build = params[:wait_for_build]
+    if latest_build = @project.job_sets.first
+      redirect_to build_model_path(latest_build)
+    else
+      @wait_for_build = params[:wait_for_build]
+    end
   end
 end

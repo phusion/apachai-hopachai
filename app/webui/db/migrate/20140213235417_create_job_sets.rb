@@ -9,6 +9,7 @@ class CreateJobSets < ActiveRecord::Migration
       t.string :state_cd, :null => false
       t.integer :number, :null => false
       t.timestamp :created_at, :null => false
+      t.timestamp :finalized_at
 
       t.string :revision, :null => false
       t.string :before_revision

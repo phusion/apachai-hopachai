@@ -10,7 +10,6 @@
  *
  *= require_self
  *= require "framework_and_overrides"
- *= require "home"
  */
 
 .container {
@@ -50,4 +49,15 @@
 
 .job-errored {
   background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHg9IjBweCIgeT0iMHB4Ij4NCjxwYXRoIGZpbGw9IiNBOEE4QTkiIGQ9Ik01LDBDMi4yMzksMCwwLDIuMjQsMCw1YzAsMi43NjIsMi4yMzgsNSw1LDVjMi43NjEsMCw1LTIuMjM4LDUtNUMxMCwyLjI0LDcuNzYyLDAsNSwwIE01Ljg2Niw3LjZINC4xMzQNCglWNi43MzJoMS43MzFWNy42eiBNNS43NDcsNS40NDFDNS43MDIsNS42NzUsNS40Nyw1Ljg2Niw1LjIzMiw1Ljg2Nkg0Ljc3Yy0wLjIzOCwwLTAuNDctMC4xOS0wLjUxNi0wLjQyNUwzLjc1MSwyLjgyOA0KCUMzLjcwOCwyLjU5MiwzLjg2NiwyLjQwMSw0LjEwNCwyLjQwMWgxLjc5M2MwLjIzNiwwLDAuMzk2LDAuMTkxLDAuMzUyLDAuNDI3TDUuNzQ3LDUuNDQxeiIvPg0KPC9zdmc+DQo=');
+}
+
+
+.build-info {
+  .value {
+    padding-left: 3em;
+  }
+
+  .name.second {
+    padding-left: 6em;
+  }
 }

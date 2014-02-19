@@ -78,6 +78,7 @@ ActiveRecord::Schema.define(version: 20140217105429) do
     t.string   "state_cd",                             null: false
     t.integer  "number",                               null: false
     t.datetime "created_at",                           null: false
+    t.datetime "finalized_at"
     t.string   "revision",                             null: false
     t.string   "before_revision"
     t.string   "branch"

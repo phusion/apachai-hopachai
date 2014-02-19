@@ -1,11 +1,17 @@
 <%
   @title = "Build ##{@build.number} - #{@project.long_name}"
-  @project_tab = :build_history
+  if @build.is_latest_build?
+  	@project_tab = :latest_build
+  else
+  	@project_tab = :build_history
+  end
 %>
 <% content_for :project_content do %>
-  <p></p>
-  <%= link_to project_model_builds_path(@project), :class => "btn btn-default btn-sm" do %>
-    <span class="glyphicon glyphicon-arrow-left"></span> Show all builds
+  <% if @project_tab == :build_history %>
+    <p></p>
+    <%= link_to project_model_builds_path(@project), :class => "btn btn-default btn-sm" do %>
+      <span class="glyphicon glyphicon-arrow-left"></span> Show all builds
+    <% end %>
   <% end %>
   <%= render :partial => 'builds/build', :locals => { :build => @build } %>
 <% end %>

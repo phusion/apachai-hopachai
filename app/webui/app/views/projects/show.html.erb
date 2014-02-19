@@ -3,14 +3,12 @@
   @project_tab = :latest_build
 %>
 <% content_for :project_content do %>
-  <% if @latest_build %>
-    <%= render :partial => 'builds/build', :locals => { :build => @latest_build } %>
-  <% elsif !@wait_for_build %>
-    <%= render :partial => 'initial_setup' %>
-  <% else %>
+  <% if @wait_for_build %>
     <div class="text-center">
       <h2>Build is now starting. Please wait...</h2>
     </div>
+  <% else %>
+    <%= render :partial => 'initial_setup' %>
   <% end %>
 <% end %>
 <%= render 'projects/layout' %>

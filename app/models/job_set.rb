@@ -32,6 +32,42 @@ class JobSet < ActiveRecord::Base
     id == project.job_sets.first.id
   end
 
+  def short_revision
+    revision[0..6]
+  end
+
+  def short_before_revision
+    if before_revision
+      before_revision[0..6]
+    else
+      nil
+    end
+  end
+
+  def short_revision_set
+    if before_revision
+      "#{short_before_revision}..#{short_revision}"
+    else
+      short_revision
+    end
+  end
+
+  def human_friendly_end_time
+    if finalized_at
+      DateHelper.new.time_ago_in_words(finalized_at) + " ago"
+    else
+      "-"
+    end
+  end
+
+  def human_friendly_duration
+    if finalized_at
+      DateHelper.new.distance_of_time_in_words(created_at, finalized_at)
+    else
+      "-"
+    end
+  end
+
   def repo_cache_path
     if new_record?
       nil
@@ -68,6 +104,10 @@ class JobSet < ActiveRecord::Base
   ##### Commands #####
 
 private
+  class DateHelper
+    include ActionView::Helpers::DateHelper
+  end
+
   def scripts_are_string_arrays
     SCRIPT_PROPERTIES.each do |prop|
       array = send(prop)
