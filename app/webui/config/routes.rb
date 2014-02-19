@@ -11,6 +11,7 @@ ApachaiHopachai::Application.routes.draw do
   post   "projects/:project_owner/:project_name/builds(.:format)" => "builds#create"
   get    "projects/:project_owner/:project_name/builds/:build_number(.:format)" => "builds#show", :as => "build"
   get    "projects/:project_owner/:project_name/builds/:build_number/jobs/:job_number(.:format)" => "jobs#show", :as => "job"
+  get    "projects/:project_owner/:project_name/builds/:build_number/jobs/:job_number/log" => "job_logs#show", :as => "job_log"
 
   resources :users
 end

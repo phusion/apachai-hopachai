@@ -25,6 +25,13 @@ private
     end
   end
 
+  def fetch_job
+    @job = @build.jobs.find_by(:number => params[:job_number])
+    if !@job
+      render_job_not_found
+    end
+  end
+
   def authorize_project(authorization = :read)
     begin
       authorize!(authorization, @project)
@@ -33,6 +40,26 @@ private
       logger.warn "Access denied to project."
       render_project_not_found
       false
+    end
+  end
+
+  def authorize_build(authorization = :read)
+    begin
+      authorize!(authorization, @build)
+      true
+    rescue CanCan::AccessDenied
+      logger.warn "Access denied to build."
+      render_build_not_found
+      false
+    end
+  end
+
+  def authorize_job
+    begin
+      authorize!(:read, @job)
+    rescue CanCan::AccessDenied
+      logger.warn "Access denied to job."
+      render_job_not_found
     end
   end
 
@@ -47,6 +74,13 @@ private
     respond_to do |format|
       format.html { render :template => 'builds/not_found.html', :status => 400 }
       format.json { render :template => 'builds/not_found.json', :status => 400 }
+    end
+  end
+
+  def render_job_not_found
+    respond_to do |format|
+      format.html { render :template => 'jobs/not_found.html', :status => 400 }
+      format.json { render :template => 'jobs/not_found.json', :status => 400 }
     end
   end
 

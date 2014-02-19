@@ -6,6 +6,7 @@ class BuildsController < ApplicationController
   before_filter :fetch_project
   before_filter :authorize_project
   before_filter :fetch_build, :except => [:index, :create]
+  before_filter :authorize_build, :except => [:index, :create]
 
   include CustomUrlHelper
 
@@ -34,13 +35,7 @@ class BuildsController < ApplicationController
   end
 
   def show
-    begin
-      authorize! :read, @build
-    rescue CanCan::AccessDenied
-      logger.warn "Access denied to build."
-      render_build_not_found
-      return
-    end
+    render
   end
 
 private
