@@ -18,6 +18,10 @@ group :cli do
   gem 'mail'
 end
 
+group :webui, :worker do
+  gem 'sidekiq'
+end
+
 group :webui do
   gem 'sass-rails', '~> 4.0.0'
   gem 'uglifier', '>= 1.3.0'

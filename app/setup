@@ -18,6 +18,18 @@ function apt_get_install()
 	apt-get install -q -y --force-yes --no-install-recommends "$@"
 }
 
+function start_runit_service()
+{
+	if [[ $TARGET_USER != vagrant ]]; then
+		(cd /etc/service && exec runsv $1)
+	fi
+	while ! [[ -e /etc/service/$1/supervise/ok ]]; do
+		sleep 1
+	done
+	sv start /etc/service/$1
+	sleep 1
+}
+
 export DEBIAN_FRONTEND=noninteractive
 SELFDIR=`dirname "$0"`
 set -x
@@ -47,11 +59,7 @@ if ! [[ -e /etc/service/postgresql/run ]]; then
 fi
 mkdir -p /etc/service/postgresql
 cp resources/run_postgresql /etc/service/postgresql/run
-while ! [[ -e /etc/service/postgresql/supervise/ok ]]; do
-	sleep 1
-done
-sv start /etc/service/postgresql
-sleep 1
+start_runit_service postgresql
 
 # Setup PostgreSQL authentication.
 if ! grep -q $TARGET_USER /etc/postgresql/9.1/main/pg_ident.conf; then
@@ -78,9 +86,28 @@ if ! [[ "$databases" =~ appa_prod ]]; then
 	sudo -u postgres -H createdb appa_prod
 fi
 
+# Setup Redis.
+apt-get install -y redis-server libhiredis-dev
+update-rc.d -f postgresql remove
+if ! [[ -e /etc/service/redis/run ]]; then
+	status=`service redis-server status`
+	if [[ "$status" =~ start ]]; then
+		service redis-server stop
+	fi
+fi
+mkdir -p /etc/service/redis
+cp resources/redis.conf /etc/redis/redis.conf
+cp resources/run_redis /etc/service/redis/run
+start_runit_service redis
+
 # Install gem bundle.
 mkdir -p /appa_bundle
 chown $TARGET_USER: /appa_bundle
 sudo -u $TARGET_USER -H bundle install --path /appa_bundle
 cd webui
 sudo -u $TARGET_USER -H bundle install --path /appa_bundle
+
+# Shut down all daemons before exiting 'docker build'.
+if [[ $TARGET_USER != vagrant ]]; then
+	sv stop /etc/service/*
+fi

@@ -33,6 +33,14 @@ if ! [[ -e /etc/apt/sources.list.d/brightbox.list ]]; then
 	apt-key adv --keyserver keyserver.ubuntu.com --recv-keys C3173AA6
 	echo deb http://ppa.launchpad.net/brightbox/ruby-ng/ubuntu precise main > /etc/apt/sources.list.d/brightbox.list
 fi
+if ! [[ -e /etc/apt/sources.list.d/nodejs.list ]]; then
+	apt-key adv --keyserver keyserver.ubuntu.com --recv-keys C7917B12
+	echo deb http://ppa.launchpad.net/chris-lea/node.js/ubuntu precise main > /etc/apt/sources.list.d/nodejs.list
+fi
+if ! [[ -e /etc/apt/sources.list.d/redis.list ]]; then
+	apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 5862E31D
+	echo deb http://ppa.launchpad.net/rwky/redis/ubuntu precise main > /etc/apt/sources.list.d/redis.list
+fi
 
 apt-get update
 apt_get_install apt-transport-https ca-certificates
@@ -45,5 +53,7 @@ apt_get_install ruby2.1 ruby2.1-dev ruby-switch nodejs runit wget nginx-extras p
 ruby-switch --set ruby2.1
 gem install bundler rake --no-rdoc --no-ri
 
-ln -sf /vagrant/app /appa
+if ! [[ -e /appa ]]; then
+	ln -s /vagrant/app /appa
+fi
 /vagrant/app/setup vagrant

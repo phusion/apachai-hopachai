@@ -5,7 +5,7 @@ default_settings: &default_settings
   host: <%= ENV['DB_HOST'] %>
   username: <%= ENV['DB_USERNAME'] %>
   password: <%= ENV['DB_PASSWORD'] %>
-  pool: 5
+  pool: 32
   timeout: 5000
 
 development:
@@ -17,18 +17,18 @@ production:
 development:
   adapter: postgresql
   database: appa_dev
-  pool: 5
+  pool: 32
   timeout: 5000
 
 test:
   adapter: postgresql
   database: appa_test
-  pool: 5
+  pool: 32
   timeout: 5000
 
 production:
   adapter: postgresql
   database: appa_prod
-  pool: 5
+  pool: 32
   timeout: 5000
 <% end %>

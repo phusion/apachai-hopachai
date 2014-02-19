@@ -232,7 +232,7 @@ private
   # Only use within an `internal_lock` block!
   def unlock_job
     raise "Not already locked" if !owns_job_lock?
-    connection.execute("SELECT pg_advisory_unlock(#{job_lock_id}")
+    connection.execute("SELECT pg_advisory_unlock(#{job_lock_id})")
     @owns_job_lock = nil
   end
 

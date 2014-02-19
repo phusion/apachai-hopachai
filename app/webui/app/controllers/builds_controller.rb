@@ -20,12 +20,12 @@ class BuildsController < ApplicationController
         return if performed?
         authenticate_user!
         return if performed?
-        create_build!
+        BuildWorker.perform_async(params)
         redirect_to project_model_path(@project, :wait_for_build => 1)
       end
       format.json do
         if check_webhook_key
-          create_build!
+          BuildWorker.perform_async(params)
         else
           render :status => 403
         end
@@ -46,22 +46,5 @@ class BuildsController < ApplicationController
 private
   def check_webhook_key
     params[:webhook_key] == @project.webhook_key
-  end
-
-  def create_build!
-    command = [
-      "#{ApachaiHopachai::BIN_DIR}/appa",
-      "prepare",
-      @project.long_name
-    ]
-    head_sha = params[:after] || params[:head]
-    if head_sha
-      command << head_sha
-    end
-    if params[:before]
-      command << params[:before]
-    end
-    command = Shellwords.join(command)
-    system("/bin/bash", "-c", "(#{command}) &")
   end
 end
