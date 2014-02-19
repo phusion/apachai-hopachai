@@ -1,0 +1,12 @@
+<%
+  @title = "Build ##{@build.number} - #{@project.long_name}"
+  @project_tab = :all_builds
+%>
+<% content_for :project_content do %>
+  <p></p>
+  <%= link_to project_model_builds_path(@project), :class => "btn btn-default btn-sm" do %>
+    <span class="glyphicon glyphicon-arrow-left"></span> Show all builds
+  <% end %>
+  <%= render :partial => 'builds/build', :locals => { :build => @build } %>
+<% end %>
+<%= render 'projects/layout' %>

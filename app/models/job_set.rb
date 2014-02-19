@@ -20,6 +20,10 @@ class JobSet < ActiveRecord::Base
 
   ##### Queries #####
 
+  def owner
+    project.owner
+  end
+
   def processed?
     state == :succeeded || state == :failed || state == :errored
   end

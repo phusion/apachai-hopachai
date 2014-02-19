@@ -1,10 +1,36 @@
+require 'shellwords'
+
 class BuildsController < ApplicationController
+  skip_before_action :verify_authenticity_token, :only => :create
+  skip_before_filter :authenticate_user!, :only => :create
   before_filter :fetch_project
   before_filter :authorize_project
-  before_filter :fetch_build, :except => :index
+  before_filter :fetch_build, :except => [:index, :create]
+
+  include CustomUrlHelper
 
   def index
     @builds = @project.job_sets
+  end
+
+  def create
+    respond_to do |format|
+      format.html do
+        verify_authenticity_token
+        return if performed?
+        authenticate_user!
+        return if performed?
+        create_build!
+        redirect_to project_model_path(@project, :wait_for_build => 1)
+      end
+      format.json do
+        if check_webhook_key
+          create_build!
+        else
+          render :status => 403
+        end
+      end
+    end
   end
 
   def show
@@ -13,6 +39,29 @@ class BuildsController < ApplicationController
     rescue CanCan::AccessDenied
       logger.warn "Access denied to build."
       render_build_not_found
+      return
     end
+  end
+
+private
+  def check_webhook_key
+    params[:webhook_key] == @project.webhook_key
+  end
+
+  def create_build!
+    command = [
+      "#{ApachaiHopachai::BIN_DIR}/appa",
+      "prepare",
+      @project.long_name
+    ]
+    head_sha = params[:after] || params[:head]
+    if head_sha
+      command << head_sha
+    end
+    if params[:before]
+      command << params[:before]
+    end
+    command = Shellwords.join(command)
+    system("/bin/bash", "-c", "(#{command}) &")
   end
 end

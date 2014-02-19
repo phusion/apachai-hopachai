@@ -9,7 +9,7 @@ ApachaiHopachai::Application.routes.draw do
   delete "projects/:project_owner/:project_name/settings(.:format)" => "projects#destroy"
   get    "projects/:project_owner/:project_name/builds(.:format)" => "builds#index", :as => "project_builds"
   post   "projects/:project_owner/:project_name/builds(.:format)" => "builds#create"
-  get    "projects/:project_owner/:project_name/builds/:build_number(.:format)" => "builds#show"
+  get    "projects/:project_owner/:project_name/builds/:build_number(.:format)" => "builds#show", :as => "build"
   get    "projects/:project_owner/:project_name/builds/:build_number/jobs/:job_number(.:format)" => "jobs#show"
 
   resources :users

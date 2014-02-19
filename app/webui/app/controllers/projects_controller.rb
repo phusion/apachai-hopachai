@@ -11,5 +11,6 @@ class ProjectsController < ApplicationController
     end
 
     @latest_build = @project.job_sets.first
+    @wait_for_build = params[:wait_for_build]
   end
 end

@@ -4,9 +4,13 @@
 %>
 <% content_for :project_content do %>
   <% if @latest_build %>
-    <%= render :partial => 'build/build', :locals => { :build => @latest_build } %>
-  <% else %>
+    <%= render :partial => 'builds/build', :locals => { :build => @latest_build } %>
+  <% elsif !@wait_for_build %>
     <%= render :partial => 'initial_setup' %>
+  <% else %>
+    <div class="text-center">
+      <h2>Build is now starting. Please wait...</h2>
+    </div>
   <% end %>
 <% end %>
 <%= render 'projects/layout' %>

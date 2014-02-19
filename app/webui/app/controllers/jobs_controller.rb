@@ -24,6 +24,8 @@ class JobsController < ApplicationController
       logger.warn "Access denied to job."
       render_job_not_found
     end
+
+    @job.check_really_processing!
   end
 
 private

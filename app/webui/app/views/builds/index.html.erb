@@ -10,8 +10,17 @@
       <p><%= link_to "Start a build", project_builds_path, :method => "post", :class => "btn btn-default" %></a></p>
     </div>
   <% else %>
-    <table>
-      <%= render :partial => 'builds/build_index_item', :collection => @builds, :as => :build %>
+    <p></p>
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th style="width: 4em">#</th>
+          <th>Subject</th>
+        </tr>
+      </thead>
+      <tbody>
+        <%= render :partial => 'builds/build_index_item', :collection => @builds, :as => :build %>
+      </tbody>
     </table>
   <% end %>
 <% end %>

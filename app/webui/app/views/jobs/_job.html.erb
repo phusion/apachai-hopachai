@@ -1,0 +1,5 @@
+<tr>
+  <td><%= link_to "##{job.number}", job_model_path(job) %></td>
+  <td><%= link_to job.public_environment_string, job_model_path(job) %></td>
+  <td><%= job.running_time %></td>
+</tr>

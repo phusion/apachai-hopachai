@@ -20,8 +20,35 @@ class Job < ActiveRecord::Base
 
   ##### Queries #####
 
+  def owner
+    job_set.owner
+  end
+
+  def project
+    job_set.project
+  end
+
   def processed?
     state == :succeeded || state == :failed || state == :errored
+  end
+
+  def public_environment_string
+    env = environment.dup
+    env = env.sort do |a, b|
+      a[0] <=> b[0]
+    end
+    env.map! do |item|
+      "#{item[0]}=#{item[1]}"
+    end
+    env.join(" ")
+  end
+
+  def running_time
+    if state == :processing
+      distance_of_time_in_words(Time.now, start_time, :include_seconds => true)
+    else
+      "-"
+    end
   end
 
   def log_file_path

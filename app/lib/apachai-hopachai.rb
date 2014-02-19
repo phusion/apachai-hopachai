@@ -3,6 +3,7 @@ module ApachaiHopachai
   VERSION_STRING       = '1.0.0'
   APP_ROOT             = File.expand_path(File.dirname(__FILE__) + "/..")
   DATABASE_CONFIG_FILE = "#{APP_ROOT}/config/database.yml"
+  BIN_DIR              = "#{APP_ROOT}/bin"
   MODELS_DIR           = "#{APP_ROOT}/models"
   RESOURCES_DIR        = "#{APP_ROOT}/resources"
   SANDBOX_IMAGE_NAME   = "phusion/apachai-hopachai-sandbox"

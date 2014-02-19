@@ -1,1 +1,14 @@
-_build.html.erb
+<h2>Build #<%= build.number %></h2>
+
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th style="width: 4em">Job #</th>
+      <th>Environment</th>
+      <th>Running time</th>
+    </tr>
+  </thead>
+  <tbody>
+    <%= render :partial => 'jobs/job', :collection => build.jobs %>
+  </tbody>
+</table>
