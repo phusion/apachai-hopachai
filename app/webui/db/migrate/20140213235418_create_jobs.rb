@@ -9,7 +9,6 @@ class CreateJobs < ActiveRecord::Migration
       t.integer :number, :null => false
       t.string  :name, :null => false
       t.string  :log_file_name, :null => false
-      t.string  :lock_file_name, :null => false
       t.integer :worker_pid
       t.integer :lock_version
       t.timestamp :created_at, :null => false

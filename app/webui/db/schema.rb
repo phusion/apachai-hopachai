@@ -102,16 +102,15 @@ ActiveRecord::Schema.define(version: 20140217105429) do
   end
 
   create_table "jobs", force: true do |t|
-    t.integer  "job_set_id",     null: false
-    t.string   "state_cd",       null: false
-    t.integer  "number",         null: false
-    t.string   "name",           null: false
-    t.string   "log_file_name",  null: false
-    t.string   "lock_file_name", null: false
+    t.integer  "job_set_id",    null: false
+    t.string   "state_cd",      null: false
+    t.integer  "number",        null: false
+    t.string   "name",          null: false
+    t.string   "log_file_name", null: false
     t.integer  "worker_pid"
     t.integer  "lock_version"
-    t.datetime "created_at",     null: false
-    t.text     "environment",    null: false
+    t.datetime "created_at",    null: false
+    t.text     "environment",   null: false
     t.datetime "start_time"
     t.datetime "end_time"
     t.index ["job_set_id"], :name => "fk__jobs_job_set_id"

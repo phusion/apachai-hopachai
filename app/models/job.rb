@@ -1,6 +1,8 @@
 class Job < ActiveRecord::Base
   class AlreadyProcessing < StandardError; end
 
+  INTERNAL_LOCK_ID = ApachaiHopachai::INTERNAL_LOCK_ID_START
+
   belongs_to :job_set, :inverse_of => :jobs
 
   serialize :environment, Hash
@@ -9,8 +11,8 @@ class Job < ActiveRecord::Base
 
   default_value_for :state, :unprocessed
 
-  before_create :create_log_and_lock_files
-  after_destroy :delete_log_and_lock_files
+  before_create :create_log_file
+  after_destroy :delete_log_file
 
   validates :state, :as_enum => true
   validates :worker_pid, :presence => true, :if => :state_processing?
@@ -25,14 +27,6 @@ class Job < ActiveRecord::Base
   def log_file_path
     if log_file_name
       "#{job_logs_path}/#{log_file_name}"
-    else
-      nil
-    end
-  end
-
-  def lock_file_path
-    if lock_file_name
-      "#{job_logs_path}/#{lock_file_name}"
     else
       nil
     end
@@ -69,38 +63,36 @@ class Job < ActiveRecord::Base
 
   #### Commands #####
 
-  def try_lock_job
-    raise "Job already locked" if job_locked?
-    begin
-      @job_lock = File.open(lock_file_path, "r")
-      if @job_lock.flock(File::LOCK_EX | File::LOCK_NB)
-        true
+  # If this job has state :processing, checks whether the worker is still alive.
+  # If the worker actually crashed without properly cleaning up the database
+  # information, then this method fixes the database information.
+  def check_really_processing!
+    return :not_processing if state != :processing
+    internal_lock do
+      if try_lock_job
+        begin
+          set_state!(:errored, false)
+          :stale_worker_detected
+        ensure
+          unlock_job
+        end
       else
-        @job_lock.close
-        @job_lock = nil
-        false
+        :really_processing
       end
-    rescue Exception => e
-      @job_lock = nil
-      raise e
     end
   end
 
-  def unlock_job
-    raise "Not already locked" if !job_locked?
-    begin
-      @job_lock.close
-    ensure
-      @job_lock = nil
-    end
-  end
-
-  def job_locked?
-    !!@job_lock
-  end
-
+  # Warning: if you use this method from the web UI, ABSOLUTELY MAKE SURE that you
+  # call `set_errored!`/`set_succeeded!`/`set_failed!` within the same request.
+  # This is because `try_lock_job` will grab a PostgreSQL connection-level advisory
+  # lock. But since Rails uses a connection pool, if you don't unlock before the
+  # connection is returned to the pool, then you won't be able to unlock it correctly.
   def set_processing!
-    if try_lock_job
+    locked = false
+    internal_lock do
+      locked = try_lock_job
+    end
+    if locked
       if state == :processing
         logger.warn "This job was previously being processed, but it never finished."
       elsif processed?
@@ -118,24 +110,15 @@ class Job < ActiveRecord::Base
   end
 
   def set_errored!
-    unlock_job if job_locked?
-    update_attributes!(:state => :errored,
-      :worker_pid => nil,
-      :end_time => Time.now)
+    set_state!(:errored)
   end
 
   def set_succeeded!
-    unlock_job if job_locked?
-    update_attributes!(:state => :succeeded,
-      :worker_pid => nil,
-      :end_time => Time.now)
+    set_state!(:succeeded)
   end
 
   def set_failed!
-    unlock_job if job_locked?
-    update_attributes!(:state => :failed,
-      :worker_pid => nil,
-      :end_time => Time.now)
+    set_state!(:failed)
   end
 
 private
@@ -148,7 +131,7 @@ private
     "#{storage_path}/job_logs"
   end
 
-  def create_log_and_lock_files
+  def create_log_file
     storage_path = ApachaiHopachai.config['storage_path']
     job_logs_path = "#{storage_path}/job_logs"
     if !File.exist?(job_logs_path)
@@ -160,7 +143,6 @@ private
 
     datetime = Time.now.strftime("%Y%m%d-%H%M")
     self.log_file_name = nil
-    self.lock_file_name = nil
 
     begin
       begin
@@ -172,19 +154,8 @@ private
         end
       end
       self.log_file_name = name
-
-      begin
-        name = "#{datetime}-#{rand(0xFFFFFFFF)}.lock"
-        begin
-          File.new("#{job_logs_path}/#{name}", File::WRONLY | File::CREAT | File::EXCL, 0600).close
-        rescue Errno::EEXIST
-          retry
-        end
-      end
-      self.lock_file_name = name
     rescue Exception => e
       delete_file_no_error(log_file_path)
-      delete_file_no_error(lock_file_path)
       raise e
     end
   end
@@ -198,8 +169,56 @@ private
     end
   end
 
-  def delete_log_and_lock_files
+  def delete_log_file
     delete_file_no_error(log_file_path)
-    delete_file_no_error(lock_file_path)
+  end
+
+  # `check_really_processing!` checks whether a worker process is really processing this job,
+  # by temporarily grabbing the job lock. During that short time, `set_processing!` might be
+  # called. To avoid a failure in those concurrent scenarios, we protect job lock operations
+  # with an internal lock.
+  def internal_lock
+    connection.execute("SELECT pg_advisory_lock(#{INTERNAL_LOCK_ID})")
+    begin
+      yield
+    ensure
+      connection.execute("SELECT pg_advisory_unlock(#{INTERNAL_LOCK_ID})")
+    end
+  end
+
+  def job_lock_id
+    ApachaiHopachai::JOB_LOCK_ID_START + id
+  end
+
+  # Only use within an `internal_lock` block!
+  def try_lock_job
+    raise "Job already locked" if owns_job_lock?
+    result = connection.select_one("SELECT pg_try_advisory_lock(#{job_lock_id}) AS result")
+    if result["result"] == "t"
+      @owns_job_lock = true
+      true
+    else
+      false
+    end
+  end
+
+  # Only use within an `internal_lock` block!
+  def unlock_job
+    raise "Not already locked" if !owns_job_lock?
+    connection.execute("SELECT pg_advisory_unlock(#{job_lock_id}")
+    @owns_job_lock = nil
+  end
+
+  def owns_job_lock?
+    !!@owns_job_lock
+  end
+
+  def set_state!(value, do_unlock = true)
+    if do_unlock
+      unlock_job if owns_job_lock?
+    end
+    update_attributes!(:state => value,
+      :worker_pid => nil,
+      :end_time => Time.now)
   end
 end

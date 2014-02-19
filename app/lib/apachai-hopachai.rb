@@ -9,6 +9,9 @@ module ApachaiHopachai
   SUPERVISOR_COMMAND   = "/usr/local/rvm/bin/rvm-exec ruby-2.1.0 ruby /appa/bin/supervisor"
   SANDBOX_JOB_RUNNER_COMMAND = "/sbin/setuser appa /usr/local/rvm/bin/rvm-exec 2.1.0 ruby /appa/bin/job_runner"
 
+  INTERNAL_LOCK_ID_START = 0
+  JOB_LOCK_ID_START      = (2 ** 32)
+
   def self.config
     # TODO: introduce config file
     { 'storage_path' => File.expand_path("#{APP_ROOT}/../tmp") }
