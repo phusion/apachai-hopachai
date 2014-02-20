@@ -63,6 +63,22 @@ class Job < ActiveRecord::Base
     end
   end
 
+  def human_friendly_end_time
+    if end_time
+      DateHelper.new.time_ago_in_words(end_time) + " ago"
+    else
+      "-"
+    end
+  end
+
+  def human_friendly_duration
+    if end_time
+      DateHelper.new.distance_of_time_in_words(start_time, end_time, :include_seconds => true)
+    else
+      "-"
+    end
+  end
+
   def log_file_path
     if log_file_name
       "#{job_logs_path}/#{log_file_name}"
@@ -83,6 +99,14 @@ class Job < ActiveRecord::Base
     end
     super(options)
   end
+
+  ##### Delegates to JobSet #####
+
+  def revision; job_set.revision; end
+  def short_revision; job_set.short_revision; end
+  def short_revision_set; job_set.short_revision_set; end
+  def author_name; job_set.author_name; end
+  def subject; job_set.subject; end
 
 
   ##### Properties #####
@@ -181,6 +205,10 @@ class Job < ActiveRecord::Base
   end
 
 private
+  class DateHelper
+    include ActionView::Helpers::DateHelper
+  end
+
   def state_processing?
     state == :processing
   end

@@ -1,0 +1,27 @@
+<table class="build-info">
+  <tr>
+    <td class="name">State</td>
+    <td class="value">
+      <span class="job-icon job-<%= build.state %>"></span>
+      <span class="job-label job-<%= build.state %>"><%= build.state.to_s.humanize %></span>
+    </td>
+    <td class="name second">Commit</td>
+    <td class="value"><%= build.short_revision %></td>
+  </tr>
+  <tr>
+    <td class="name">Finished</td>
+    <td class="value"><%= build.human_friendly_end_time %></td>
+    <td class="name second">Compare</td>
+    <td class="value"><%= build.short_revision_set %></td>
+  </tr>
+  <tr>
+    <td class="name">Duration</td>
+    <td class="value"><%= build.human_friendly_duration %></td>
+    <td class="name second">Author</td>
+    <td class="value"><%= build.author_name %></td>
+  </tr>
+  <tr>
+    <td class="name">Message</td>
+    <td class="value" colspan="3"><%= build.subject %></td>
+  </tr>
+</table>

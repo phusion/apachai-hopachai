@@ -62,7 +62,7 @@ class JobSet < ActiveRecord::Base
 
   def human_friendly_duration
     if finalized_at
-      DateHelper.new.distance_of_time_in_words(created_at, finalized_at)
+      DateHelper.new.distance_of_time_in_words(created_at, finalized_at, :include_seconds => true)
     else
       "-"
     end
