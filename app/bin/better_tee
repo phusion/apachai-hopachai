@@ -1,0 +1,64 @@
+#!/usr/bin/env ruby
+# encoding: binary
+# Like `tee`, but reads its input from the given command, ignores EPIPE on writes to stdout,
+# and kills all child processes on interruption.
+#
+# Usage: better_tee LOGFILE COMMAND [args...]
+
+def kill_and_wait_no_error(pid)
+  if pid
+    begin
+      Process.kill('TERM', pid)
+    rescue Errno::EPERM, Errno::ECHILD, Errno::ESRCH
+    end
+    begin
+      Process.waitpid(pid)
+    rescue Errno::EPERM, Errno::ECHILD, Errno::ESRCH
+    end
+  end
+end
+
+log_file = ARGV.shift
+stdout_broken = false
+STDOUT.binmode
+STDOUT.sync = true
+
+File.open(log_file, "ab") do |log|
+  log.sync = true
+
+  a, b = IO.pipe
+  pid = Process.spawn(*ARGV,
+    :in  => :in,
+    :out => b,
+    :err => :err,
+    :close_others => true)
+
+  begin
+    b.close
+    a.binmode
+    a.sync = true
+
+    while true
+      begin
+        line = a.readline
+      rescue EOFError
+        break
+      end
+
+      log.write(line)
+
+      if !stdout_broken
+        begin
+          STDOUT.write(line)
+        rescue Errno::EPIPE
+          stdout_broken = true
+        end
+      end
+    end
+
+    Process.waitpid(pid)
+  rescue Exception => e
+    kill_and_wait_no_error(pid)
+    raise e
+  end
+end
