@@ -17,8 +17,6 @@ module ApachaiHopachai
   COMMANDS = {
     'prepare'  => 'PrepareCommand',
     'run'      => 'RunCommand',
-    'finalize' => 'FinalizeCommand',
-    'daemon'   => 'DaemonCommand',
     'shell'    => 'ShellCommand',
     'help'     => 'HelpCommand'
   }
