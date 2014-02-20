@@ -7,7 +7,7 @@ require 'rails/all'
 Bundler.require(:default, :models, :webui, Rails.env)
 
 I18n.enforce_available_locales = false
-SafeYAML::OPTIONS[:default_mode] = :safe
+SafeYAML::OPTIONS[:default_mode] = :unsafe
 
 module ApachaiHopachai
   class Application < Rails::Application

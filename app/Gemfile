@@ -11,15 +11,12 @@ group :models do
   gem 'simple_enum'
   gem 'default_value_for'
   gem 'acts_as_list'
+  gem 'sidekiq'
 end
 
 group :cli do
   gem 'ansi2html'
   gem 'mail'
-end
-
-group :webui, :worker do
-  gem 'sidekiq'
 end
 
 group :webui do
@@ -31,6 +28,7 @@ group :webui do
   gem 'jbuilder', '~> 1.2'
   gem 'bootstrap-sass', '>= 3.0.0.0'
   gem 'simple_form'
+  gem 'sinatra', '>= 1.3.0', :require => nil
   # For Rails 4 support.
   gem 'activeadmin', :github => 'gregbell/active_admin'
 end

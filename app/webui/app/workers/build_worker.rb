@@ -2,7 +2,7 @@ require 'tmpdir'
 
 class BuildWorker
   include Sidekiq::Worker
-  sidekiq_options :retry => 5
+  sidekiq_options :queue => :builds, :retry => 5
 
   def perform(project_id, params)
     project = Project.find(project_id)

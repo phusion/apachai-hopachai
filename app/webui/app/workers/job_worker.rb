@@ -1,6 +1,6 @@
 class JobWorker
   include Sidekiq::Worker
-  sidekiq_options :retry => false
+  sidekiq_options :queue => :jobs, :retry => false
 
   def perform(job_id)
     command = [

@@ -177,7 +177,7 @@ module ApachaiHopachai
         filename = "#{@work_dir}/repo/.travis.yml"
       end
       @logger.debug("Loading Travis project configuration from #{filename}")
-      @travis = YAML.load_file(filename)
+      @travis = YAML.load_file(filename, :safe => true)
     end
 
     def calculate_build_matrix

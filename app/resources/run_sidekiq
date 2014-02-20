@@ -6,6 +6,7 @@ cd /appa/webui
 export JOB_CONCURRENCY=${RAILS_ENV:-2}
 export RAILS_ENV=${RAILS_ENV:-development}
 exec /sbin/setuser $user /appa/bin/sidekiq \
+	-C ../config/sidekiq.yml \
 	-c $JOB_CONCURRENCY \
 	-l log/sidekiq.log \
 	-e $RAILS_ENV \

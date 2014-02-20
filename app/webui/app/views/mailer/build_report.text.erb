@@ -1,0 +1,13 @@
+Build Report for <%= @project.name %>
+---------------------------------------
+
+Status: <%= @build.state.to_s.humanize %>
+
+Duration: <%= @build.human_friendly_duration %>
+Commit: <%= @build.short_revision %>
+Author: <%= @build.author_name %>
+Message: <%= @build.subject %>
+
+------------------
+
+CI report brought to you by Apachai Hopachai.

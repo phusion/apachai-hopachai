@@ -1,3 +1,5 @@
+require 'sidekiq/web'
+
 ApachaiHopachai::Application.routes.draw do
   root :to => "home#index"
   devise_for :users, :controllers => { :registrations => "registrations" }
@@ -14,4 +16,8 @@ ApachaiHopachai::Application.routes.draw do
   get    "projects/:project_owner/:project_name/builds/:build_number/jobs/:job_number/log" => "job_logs#show", :as => "job_log"
 
   resources :users
+
+  authenticate :user, lambda { |u| u.admin? } do
+    mount Sidekiq::Web => '/sidekiq'
+  end
 end

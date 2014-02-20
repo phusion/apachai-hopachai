@@ -1,12 +1,12 @@
 class Job < ActiveRecord::Base
   class AlreadyProcessing < StandardError; end
 
-  INTERNAL_LOCK_ID = ApachaiHopachai::INTERNAL_LOCK_ID_START
+  INTERNAL_LOCK_ID = ApachaiHopachai::INTERNAL_LOCK_ID_START + 1
 
   belongs_to :job_set, :inverse_of => :jobs
 
   serialize :environment, Hash
-  as_enum :state, [:unprocessed, :processing, :succeeded, :failed, :errored],
+  as_enum :state, [:unprocessed, :processing, :passed, :failed, :errored],
     :strings => true, :slim => true
 
   default_value_for :state, :unprocessed
@@ -37,20 +37,11 @@ class Job < ActiveRecord::Base
   end
 
   def processed?
-    state == :succeeded || state == :failed || state == :errored
+    state == :passed || state == :failed || state == :errored
   end
 
   def status_css_class
-    case state
-    when :unprocessed, :processing
-      "job-unprocessed"
-    when :succeeded
-      "job-succeeded"
-    when :failed
-      "job-failed"
-    when :errored
-      "job-errored"
-    end
+    "job-#{state}"
   end
 
   def public_environment_string
@@ -120,24 +111,38 @@ class Job < ActiveRecord::Base
   # If this job has state :processing, checks whether the worker is still alive.
   # If the worker actually crashed without properly cleaning up the database
   # information, then this method fixes the database information.
+  # 
+  # WARNING: do not call this method within a transaction! This is because
+  # it calls `JobSet#send_notifications`.
   def check_really_processing!
     return :not_processing if state != :processing
-    internal_lock do
-      if try_lock_job
-        begin
-          set_state!(:errored, false)
-          :stale_worker_detected
-        ensure
-          unlock_job
+    result = nil
+    finalized = false
+    transaction do
+      internal_lock do
+        if try_lock_job
+          begin
+            set_processed!(:errored, false)
+            result = :stale_worker_detected
+          ensure
+            unlock_job
+          end
+        else
+          result = :really_processing
         end
-      else
-        :really_processing
+      end
+      if result == :stale_worker_detected
+        finalized = job_set.try_finalize!
       end
     end
+    if finalized
+      job_set.send_notifications
+    end
+    result
   end
 
   # Warning: if you use this method from the web UI, ABSOLUTELY MAKE SURE that you
-  # call `set_errored!`/`set_succeeded!`/`set_failed!` within the same request.
+  # call `set_errored!`/`set_passed!`/`set_failed!` within the same request.
   # This is because `try_lock_job` will grab a PostgreSQL connection-level advisory
   # lock. But since Rails uses a connection pool, if you don't unlock before the
   # connection is returned to the pool, then you won't be able to unlock it correctly.
@@ -164,15 +169,15 @@ class Job < ActiveRecord::Base
   end
 
   def set_errored!
-    set_state!(:errored)
+    set_processed!(:errored)
   end
 
-  def set_succeeded!
-    set_state!(:succeeded)
+  def set_passed!
+    set_processed!(:passed)
   end
 
   def set_failed!
-    set_state!(:failed)
+    set_processed!(:failed)
   end
 
 private
@@ -267,7 +272,7 @@ private
     !!@owns_job_lock
   end
 
-  def set_state!(value, do_unlock = true)
+  def set_processed!(value, do_unlock = true)
     if do_unlock
       unlock_job if owns_job_lock?
     end

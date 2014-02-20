@@ -32,9 +32,13 @@ module ApachaiHopachai
         set_job_processing
         begin
           run_job
-        rescue StandardError, SignalException => e
+        rescue Exception => e
           set_job_errored
-          exit(log_error(e))
+          if e.is_a?(StandardError) || e.is_a?(SignalException)
+            exit(log_error(e))
+          else
+            raise e
+          end
         ensure
           destroy_work_dir
         end
@@ -144,10 +148,17 @@ module ApachaiHopachai
     def run_job
       @logger.info "Running job ##{@job.number}: #{@job.name}"
       exit_code = run_job_script_and_extract_result
-      if exit_code == 0
-        @job.set_succeeded!
-      else
-        @job.set_failed!
+      finalized = nil
+      @job_set.transaction do
+        if exit_code == 0
+          @job.set_passed!
+        else
+          @job.set_failed!
+        end
+        finalized = @job_set.try_finalize!
+      end
+      if finalized
+        @job_set.send_notifications
       end
     end
 
@@ -209,10 +220,17 @@ module ApachaiHopachai
     end
 
     def set_job_errored
-      begin
-        @job.set_errored!
-      rescue ActiveRecord::StaleObjectError
-        @logger.warn("Unable to set job state to 'errored': job has been concurrently modified.")
+      finalized = false
+      @job_set.transaction do
+        begin
+          @job.set_errored!
+          finalized = @job_set.try_finalize!
+        rescue ActiveRecord::StaleObjectError
+          @logger.warn("Unable to set job state to 'errored': job has been concurrently modified.")
+        end
+      end
+      if finalized
+        @job_set.send_notifications
       end
     end
 

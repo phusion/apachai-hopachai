@@ -7,7 +7,7 @@ class JobSet < ActiveRecord::Base
   belongs_to :project, :inverse_of => :job_sets
 
   SCRIPT_PROPERTIES.each { |prop| serialize(prop, Array) }
-  as_enum :state, [:unprocessed, :processing, :succeeded, :failed, :errored],
+  as_enum :state, [:unprocessed, :processing, :passed, :failed, :errored],
     :strings => true, :slim => true
   acts_as_list :column => "number", :scope => :project
 
@@ -25,7 +25,7 @@ class JobSet < ActiveRecord::Base
   end
 
   def processed?
-    state == :succeeded || state == :failed || state == :errored
+    state == :passed || state == :failed || state == :errored
   end
 
   def is_latest_build?
@@ -103,6 +103,61 @@ class JobSet < ActiveRecord::Base
 
   ##### Commands #####
 
+  # Begin finalizing this job set. To be called after all jobs have been processed,
+  # and to be used in combination with `send_notifications`.
+  # 
+  # Returns whether this call has changed the job set state to one of the processed
+  # states.
+  # 
+  # You are supposed to call `try_finalize!`, check whether it returns true, and
+  # if so call `send_notifications` later when you've **exited the transaction**.
+  # 
+  #     finalized = nil
+  #     transaction do
+  #       ...
+  #       finalized = job_set.try_finalize!
+  #     end
+  #     if finalized
+  #       job_set.send_notifications
+  #     end
+  def try_finalize!
+    transaction do
+      advisory_lock do
+        reload
+        return false if processed?
+        jobs.reload
+        if jobs.all? { |job| job.processed? }
+          if jobs.all? { |job| job.state == :passed }
+            logger.info "Finalizing job set: setting state to 'passed'."
+            self.state = :passed
+          elsif jobs.all? { |job| job.state == :failed }
+            logger.info "Finalizing job set: setting state to 'failed'."
+            self.state = :failed
+          else
+            logger.info "Finalizing job set: setting state to 'errored'."
+            self.state = :errored
+          end
+          self.finalized_at = Time.now
+          save!
+          true
+        else
+          false
+        end
+      end
+    end
+  end
+
+  # Warning: do not call this within the same transaction as `try_finalize!`!
+  # This is because sending notifications is handled asynchronously in a worker.
+  # If the worker tries to load the database record before the transaction has
+  # been committed, then it may not see the most up to date information.
+  def send_notifications
+    raise "Job set is not yet fully processed." if !processed?
+
+    logger.info "Scheduling build report email."
+    Mailer.delay(:queue => :notifications).build_report(id)
+  end
+
 private
   class DateHelper
     include ActionView::Helpers::DateHelper
@@ -147,6 +202,19 @@ private
         value = [value.to_s]
       end
       set_and_maybe_nullify(prop, value)
+    end
+  end
+
+  def job_set_lock_id
+    ApachaiHopachai::JOB_SET_LOCK_ID_START + id
+  end
+
+  def advisory_lock
+    self.class.connection.execute("SELECT pg_advisory_lock(#{job_set_lock_id})")
+    begin
+      yield
+    ensure
+      self.class.connection.execute("SELECT pg_advisory_unlock(#{job_set_lock_id})")
     end
   end
 end
