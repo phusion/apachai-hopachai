@@ -21,7 +21,7 @@ class JobRunner
 private
   def load_input
     @project = load_json('/input/project.json')
-    @job_set = load_json('/input/job_set.json')
+    @build = load_json('/input/build.json')
     @job = load_json('/input/job.json')
   end
 
@@ -64,7 +64,7 @@ private
     log "cd /home/appa/repo"
     Dir.chdir("/home/appa/repo")
 
-    if @job_set['git_init_submodules'] && File.exist?(".gitmodules")
+    if @build['git_init_submodules'] && File.exist?(".gitmodules")
       sh "git", "submodule", "--init", "--recursive"
     end
   end
@@ -99,7 +99,7 @@ private
   end
 
   def run_main_script
-    script = @job_set['script']
+    script = @build['script']
     if script.nil? || script.empty?
       script = default_main_script_for_current_language
     end
@@ -141,7 +141,7 @@ private
   end
 
   def run_script(name)
-    if (script = @job_set[name]) && !script.empty?
+    if (script = @build[name]) && !script.empty?
       script.each do |command|
         puts "$ #{command}"
         system(command)

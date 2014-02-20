@@ -25,7 +25,7 @@ class BuildWorker
 
       if system(*command)
         build_id = File.read("#{path}/id.txt")
-        build = JobSet.find(build_id)
+        build = Build.find(build_id)
         build.jobs.each do |job|
           JobWorker.perform_async(job.id)
         end

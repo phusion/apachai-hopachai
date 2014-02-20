@@ -11,7 +11,7 @@ class BuildsController < ApplicationController
   include CustomUrlHelper
 
   def index
-    @builds = @project.job_sets
+    @builds = @project.builds
   end
 
   def create

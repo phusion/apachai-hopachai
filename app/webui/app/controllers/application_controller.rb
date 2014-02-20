@@ -22,7 +22,7 @@ private
   end
 
   def fetch_build
-    @build = @project.job_sets.find_by(:number => params[:build_number])
+    @build = @project.builds.find_by(:number => params[:build_number])
     if !@build
       render_build_not_found
     end

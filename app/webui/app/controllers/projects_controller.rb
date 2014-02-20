@@ -5,7 +5,7 @@ class ProjectsController < ApplicationController
   include CustomUrlHelper
 
   def show
-    if latest_build = @project.job_sets.first
+    if latest_build = @project.builds.first
       redirect_to build_model_path(latest_build)
     else
       @wait_for_build = params[:wait_for_build]

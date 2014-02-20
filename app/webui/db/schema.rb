@@ -73,7 +73,7 @@ ActiveRecord::Schema.define(version: 20140217105429) do
     t.foreign_key ["user_id"], "users", ["id"], :on_update => :cascade, :on_delete => :cascade, :name => "fk_authorizations_user_id"
   end
 
-  create_table "job_sets", force: true do |t|
+  create_table "builds", force: true do |t|
     t.integer  "project_id",                           null: false
     t.string   "state_cd",                             null: false
     t.integer  "number",                               null: false
@@ -98,12 +98,12 @@ ActiveRecord::Schema.define(version: 20140217105429) do
     t.text     "after_success_script",                 null: false
     t.text     "after_failure_script",                 null: false
     t.text     "after_script",                         null: false
-    t.index ["project_id"], :name => "fk__job_sets_project_id"
-    t.foreign_key ["project_id"], "projects", ["id"], :on_update => :cascade, :on_delete => :cascade, :name => "fk_job_sets_project_id"
+    t.index ["project_id"], :name => "fk__builds_project_id"
+    t.foreign_key ["project_id"], "projects", ["id"], :on_update => :cascade, :on_delete => :cascade, :name => "fk_builds_project_id"
   end
 
   create_table "jobs", force: true do |t|
-    t.integer  "job_set_id",    null: false
+    t.integer  "build_id",      null: false
     t.string   "state_cd",      null: false
     t.integer  "number",        null: false
     t.string   "name",          null: false
@@ -114,9 +114,9 @@ ActiveRecord::Schema.define(version: 20140217105429) do
     t.text     "environment",   null: false
     t.datetime "start_time"
     t.datetime "end_time"
-    t.index ["job_set_id"], :name => "fk__jobs_job_set_id"
+    t.index ["build_id"], :name => "fk__jobs_build_id"
     t.index ["state_cd"], :name => "jobs_processing", :conditions => "((state_cd)::text = 'processing'::text)"
-    t.foreign_key ["job_set_id"], "job_sets", ["id"], :on_update => :cascade, :on_delete => :cascade, :name => "fk_jobs_job_set_id"
+    t.foreign_key ["build_id"], "builds", ["id"], :on_update => :cascade, :on_delete => :cascade, :name => "fk_jobs_build_id"
   end
 
 end

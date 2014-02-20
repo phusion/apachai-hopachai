@@ -1,10 +1,10 @@
-class JobSet < ActiveRecord::Base
+class Build < ActiveRecord::Base
   SCRIPT_PROPERTIES = [:before_install_script, :install_script, :before_script, :script,
     :after_success_script, :after_failure_script, :after_script].freeze
 
   has_many :jobs, -> { order(:number) },
-    :inverse_of => :job_set, :autosave => true, :dependent => :destroy
-  belongs_to :project, :inverse_of => :job_sets
+    :inverse_of => :build, :autosave => true, :dependent => :destroy
+  belongs_to :project, :inverse_of => :builds
 
   SCRIPT_PROPERTIES.each { |prop| serialize(prop, Array) }
   as_enum :state, [:unprocessed, :processing, :passed, :failed, :errored],
@@ -29,7 +29,7 @@ class JobSet < ActiveRecord::Base
   end
 
   def is_latest_build?
-    id == project.job_sets.first.id
+    id == project.builds.first.id
   end
 
   def short_revision
@@ -103,10 +103,10 @@ class JobSet < ActiveRecord::Base
 
   ##### Commands #####
 
-  # Begin finalizing this job set. To be called after all jobs have been processed,
+  # Begin finalizing this build. To be called after all jobs have been processed,
   # and to be used in combination with `send_notifications`.
   # 
-  # Returns whether this call has changed the job set state to one of the processed
+  # Returns whether this call has changed the build state to one of the processed
   # states.
   # 
   # You are supposed to call `try_finalize!`, check whether it returns true, and
@@ -115,10 +115,10 @@ class JobSet < ActiveRecord::Base
   #     finalized = nil
   #     transaction do
   #       ...
-  #       finalized = job_set.try_finalize!
+  #       finalized = build.try_finalize!
   #     end
   #     if finalized
-  #       job_set.send_notifications
+  #       build.send_notifications
   #     end
   def try_finalize!
     transaction do
@@ -128,13 +128,13 @@ class JobSet < ActiveRecord::Base
         jobs.reload
         if jobs.all? { |job| job.processed? }
           if jobs.all? { |job| job.state == :passed }
-            logger.info "Finalizing job set: setting state to 'passed'."
+            logger.info "Finalizing build: setting state to 'passed'."
             self.state = :passed
           elsif jobs.all? { |job| job.state == :failed }
-            logger.info "Finalizing job set: setting state to 'failed'."
+            logger.info "Finalizing build: setting state to 'failed'."
             self.state = :failed
           else
-            logger.info "Finalizing job set: setting state to 'errored'."
+            logger.info "Finalizing build: setting state to 'errored'."
             self.state = :errored
           end
           self.finalized_at = Time.now
@@ -152,7 +152,7 @@ class JobSet < ActiveRecord::Base
   # If the worker tries to load the database record before the transaction has
   # been committed, then it may not see the most up to date information.
   def send_notifications
-    raise "Job set is not yet fully processed." if !processed?
+    raise "Build is not yet fully processed." if !processed?
 
     logger.info "Scheduling build report email."
     Mailer.delay(:queue => :notifications).build_report(id)
@@ -205,16 +205,16 @@ private
     end
   end
 
-  def job_set_lock_id
-    ApachaiHopachai::JOB_SET_LOCK_ID_START + id
+  def build_lock_id
+    ApachaiHopachai::BUILD_LOCK_ID_START + id
   end
 
   def advisory_lock
-    self.class.connection.execute("SELECT pg_advisory_lock(#{job_set_lock_id})")
+    self.class.connection.execute("SELECT pg_advisory_lock(#{build_lock_id})")
     begin
       yield
     ensure
-      self.class.connection.execute("SELECT pg_advisory_unlock(#{job_set_lock_id})")
+      self.class.connection.execute("SELECT pg_advisory_unlock(#{build_lock_id})")
     end
   end
 end

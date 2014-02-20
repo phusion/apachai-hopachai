@@ -36,24 +36,24 @@ class Ability
       return
     end
 
-    can :manage, [Project, JobSet, Job], :owner_id => user.id
+    can :manage, [Project, Build, Job], :owner_id => user.id
 
     can :read, Project do |project|
       project.authorizations.exists?(:user_id => user.id)
     end
 
-    can :read, JobSet do |job_set|
-      can?(:read, job_set.project)
+    can :read, Build do |build|
+      can?(:read, build.project)
     end
-    can :manage, JobSet do |job_set|
-      can?(:manage, job_set.project)
+    can :manage, Build do |build|
+      can?(:manage, build.project)
     end
 
     can :read, Job do |job|
-      can?(:read, job.job_set.project)
+      can?(:read, job.build.project)
     end
     can :manage, Job do |job|
-      can?(:manage, job.job_set.project)
+      can?(:manage, job.build.project)
     end
   end
 end

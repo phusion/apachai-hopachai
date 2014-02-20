@@ -3,7 +3,7 @@ class Job < ActiveRecord::Base
 
   INTERNAL_LOCK_ID = ApachaiHopachai::INTERNAL_LOCK_ID_START + 1
 
-  belongs_to :job_set, :inverse_of => :jobs
+  belongs_to :build, :inverse_of => :jobs
 
   serialize :environment, Hash
   as_enum :state, [:unprocessed, :processing, :passed, :failed, :errored],
@@ -20,20 +20,12 @@ class Job < ActiveRecord::Base
 
   ##### Queries #####
 
-  def owner
-    job_set.owner
-  end
-
-  def project
-    job_set.project
-  end
-
   def long_number
-    "#{job_set.number}.#{number}"
+    "#{build.number}.#{number}"
   end
 
   def part_of_latest_build?
-    job_set.is_latest_build?
+    build.is_latest_build?
   end
 
   def processed?
@@ -100,13 +92,15 @@ class Job < ActiveRecord::Base
     super(options)
   end
 
-  ##### Delegates to JobSet #####
+  ##### Delegates to Build #####
 
-  def revision; job_set.revision; end
-  def short_revision; job_set.short_revision; end
-  def short_revision_set; job_set.short_revision_set; end
-  def author_name; job_set.author_name; end
-  def subject; job_set.subject; end
+  def owner; build.owner; end
+  def project; build.project; end
+  def revision; build.revision; end
+  def short_revision; build.short_revision; end
+  def short_revision_set; build.short_revision_set; end
+  def author_name; build.author_name; end
+  def subject; build.subject; end
 
 
   ##### Properties #####
@@ -137,7 +131,7 @@ class Job < ActiveRecord::Base
   # information, then this method fixes the database information.
   # 
   # WARNING: do not call this method within a transaction! This is because
-  # it calls `JobSet#send_notifications`.
+  # it calls `Build#send_notifications`.
   def check_really_processing!
     return :not_processing if state != :processing
     result = nil
@@ -156,11 +150,11 @@ class Job < ActiveRecord::Base
         end
       end
       if result == :stale_worker_detected
-        finalized = job_set.try_finalize!
+        finalized = build.try_finalize!
       end
     end
     if finalized
-      job_set.send_notifications
+      build.send_notifications
     end
     result
   end
@@ -182,7 +176,7 @@ class Job < ActiveRecord::Base
         logger.warn "This job has already been processed. Rerunning it."
       end
       transaction do
-        job_set.update_attributes!(:state => :processing)
+        build.update_attributes!(:state => :processing)
         update_attributes!(:state => :processing,
           :worker_pid => Process.pid,
           :start_time => Time.now)

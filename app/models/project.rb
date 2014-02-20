@@ -2,7 +2,7 @@ require 'openssl'
 require 'securerandom'
 
 class Project < ActiveRecord::Base
-  has_many :job_sets, -> { order("number DESC") },
+  has_many :builds, -> { order("number DESC") },
     :inverse_of => :project, :dependent => :destroy
   has_many :authorizations, :inverse_of => :project
   belongs_to :owner, :class_name => 'User', :inverse_of => :projects

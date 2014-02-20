@@ -127,8 +127,8 @@ module ApachaiHopachai
       rescue ActiveRecord::RecordNotFound
         abort "Job with ID #{@argv[0]} not found."
       end
-      @job_set = @job.job_set
-      @project = @job_set.project
+      @build = @job.build
+      @project = @build.project
     end
 
     def create_work_dir
@@ -161,14 +161,14 @@ module ApachaiHopachai
       File.open("#{@work_dir}/input/project.json", "w") do |f|
         f.write(@project.to_json)
       end
-      File.open("#{@work_dir}/input/job_set.json", "w") do |f|
-        f.write(@job_set.to_json)
+      File.open("#{@work_dir}/input/build.json", "w") do |f|
+        f.write(@build.to_json)
       end
       File.open("#{@work_dir}/input/job.json", "w") do |f|
         f.write(@job.to_json)
       end
-      if File.exist?(@job_set.repo_cache_path)
-        File.symlink(@job_set.repo_cache_path, "#{@work_dir}/input/repo.tar.gz")
+      if File.exist?(@build.repo_cache_path)
+        File.symlink(@build.repo_cache_path, "#{@work_dir}/input/repo.tar.gz")
       end
     end
 
@@ -186,16 +186,16 @@ module ApachaiHopachai
       end
 
       finalized = nil
-      @job_set.transaction do
+      @build.transaction do
         if exit_code == 0
           @job.set_passed!
         else
           @job.set_failed!
         end
-        finalized = @job_set.try_finalize!
+        finalized = @build.try_finalize!
       end
       if finalized
-        @job_set.send_notifications
+        @build.send_notifications
       end
     end
 
@@ -400,16 +400,16 @@ module ApachaiHopachai
 
     def set_job_errored
       finalized = false
-      @job_set.transaction do
+      @build.transaction do
         begin
           @job.set_errored!
-          finalized = @job_set.try_finalize!
+          finalized = @build.try_finalize!
         rescue ActiveRecord::StaleObjectError
           @logger.warn("Unable to set job state to 'errored': job has been concurrently modified.")
         end
       end
       if finalized
-        @job_set.send_notifications
+        @build.send_notifications
       end
     end
 

@@ -1,6 +1,6 @@
-class CreateJobSets < ActiveRecord::Migration
+class CreateBuilds < ActiveRecord::Migration
   def change
-    create_table(:job_sets) do |t|
+    create_table(:builds) do |t|
       t.integer :project_id, :null => false, :foreign_key => {
         :on_delete => :cascade,
         :on_update => :cascade

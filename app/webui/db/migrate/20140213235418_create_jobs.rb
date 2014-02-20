@@ -1,7 +1,7 @@
 class CreateJobs < ActiveRecord::Migration
   def up
     create_table(:jobs) do |t|
-      t.integer :job_set_id, :null => false, :foreign_key => {
+      t.integer :build_id, :null => false, :foreign_key => {
         :on_delete => :cascade,
         :on_update => :cascade
       }

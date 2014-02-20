@@ -28,12 +28,12 @@ module ApachaiHopachai
       begin
         create_work_dir
         begin
-          prepare_job_set
+          prepare_build
           clone_repo
           extract_repo_info
           load_travis_yml
           environments = calculate_build_matrix
-          create_job_set(environments)
+          create_build(environments)
         ensure
           destroy_work_dir
         end
@@ -71,7 +71,7 @@ module ApachaiHopachai
         opts.on("--travis-yml FILENAME", String, "Use the given .travis.yml instead of the one in the repository") do |val|
           @options[:travis_yml] = val
         end
-        opts.on("--id-file FILENAME", String, "Write the job set ID to the given file") do |val|
+        opts.on("--id-file FILENAME", String, "Write the build ID to the given file") do |val|
           @options[:id_file] = val
         end
         opts.on("--daemonize", "-d", "Daemonize into background") do
@@ -129,10 +129,10 @@ module ApachaiHopachai
       FileUtils.remove_entry_secure(@work_dir)
     end
 
-    def prepare_job_set
-      @job_set = JobSet.new
-      @job_set.project = @project
-      @job_set.before_revision = @options[:before_sha]
+    def prepare_build
+      @build = Build.new
+      @build.project = @project
+      @build.before_revision = @options[:before_sha]
     end
 
     def clone_repo
@@ -162,12 +162,12 @@ module ApachaiHopachai
     def extract_repo_info
       e_dir = Shellwords.escape("#{@work_dir}/repo")
       lines = `cd #{e_dir} && git show --pretty='format:%H\n%an\n%ae\n%cn\n%ce\n%s' -s`.split("\n")
-      @job_set.revision,
-        @job_set.author_name,
-        @job_set.author_email,
-        @job_set.committer_name,
-        @job_set.committer_email,
-        @job_set.subject = lines
+      @build.revision,
+        @build.author_name,
+        @build.author_email,
+        @build.committer_name,
+        @build.committer_email,
+        @build.subject = lines
     end
 
     def load_travis_yml
@@ -199,26 +199,26 @@ module ApachaiHopachai
       environments
     end
 
-    def create_job_set(environments)
-      @job_set.set_properties_from_travis_config(@travis)
+    def create_build(environments)
+      @build.set_properties_from_travis_config(@travis)
 
       environments.each_with_index do |environment, i|
-        create_job(@job_set, environment, i + 1)
+        create_job(@build, environment, i + 1)
       end
 
-      if @job_set.save
-        @logger.info("Created job set with ID #{@job_set.id}. " +
-          "It contains #{@job_set.jobs.count} jobs, with IDs #{@job_set.job_ids}")
+      if @build.save
+        @logger.info("Created build with ID #{@build.id}. " +
+          "It contains #{@build.jobs.count} jobs, with IDs #{@build.job_ids}")
         create_id_file
         @logger.info("Creating repo cache...")
-        if create_job_set_repo_cache
+        if create_build_repo_cache
           @logger.info("Repo cache created.")
         else
-          @logger.warn("Unable to create repository cache file for job set.")
+          @logger.warn("Unable to create repository cache file for build.")
         end
       else
-        @logger.error "Could not create job set:"
-        report_model_errors(@logger, @job_set)
+        @logger.error "Could not create build:"
+        report_model_errors(@logger, @build)
         abort
       end
     end
@@ -226,14 +226,14 @@ module ApachaiHopachai
     def create_id_file
       if path = @options[:id_file]
         File.open(path, "w") do |f|
-          f.write(@job_set.id.to_s)
+          f.write(@build.id.to_s)
         end
       end
     end
 
-    def create_job_set_repo_cache
-      @logger.debug "Creating archive #{@job_set.repo_cache_path}"
-      parent_dir = File.dirname(@job_set.repo_cache_path)
+    def create_build_repo_cache
+      @logger.debug "Creating archive #{@build.repo_cache_path}"
+      parent_dir = File.dirname(@build.repo_cache_path)
       if !File.exist?(parent_dir)
         begin
           Dir.mkdir(parent_dir, 0700)
@@ -241,18 +241,18 @@ module ApachaiHopachai
         end
       end
       result = system("env", "GZIP=-3", "tar", "-czf",
-        "#{@job_set.repo_cache_path}.tmp", ".", :chdir => "#{@work_dir}/repo")
+        "#{@build.repo_cache_path}.tmp", ".", :chdir => "#{@work_dir}/repo")
       if result
-        File.rename("#{@job_set.repo_cache_path}.tmp", @job_set.repo_cache_path)
+        File.rename("#{@build.repo_cache_path}.tmp", @build.repo_cache_path)
       else
         false
       end
     end
 
-    def create_job(job_set, environment, number)
+    def create_job(build, environment, number)
       name = BuildMatrix.environment_display_name(environment)
       @logger.info "Preparing job ##{number}: #{name}"
-      job = job_set.jobs.build
+      job = build.jobs.build
       job.number = number
       job.name = name
       job.environment = environment

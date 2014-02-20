@@ -17,6 +17,6 @@ private
   end
 
   def job_model_path(job, *args)
-    job_path(job.owner.username, job.project.name, job.job_set.number, job.number, *args)
+    job_path(job.owner.username, job.project.name, job.build.number, job.number, *args)
   end
 end
