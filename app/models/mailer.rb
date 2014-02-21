@@ -3,9 +3,9 @@ class Mailer < ActionMailer::Base
 
   def build_report(build_id)
     @build = Build.find(build_id)
-    @project = @build.project
+    @repo = @build.repo
     status = @build.state.to_s.humanize
-    mail(:to => @project.owner.email,
-      :subject => "[#{status}] #{@project.name} (#{@build.short_revision_set})")
+    mail(:to => @repo.owner.email,
+      :subject => "[#{status}] #{@repo.name} (#{@build.short_revision_set})")
   end
 end

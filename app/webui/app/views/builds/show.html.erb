@@ -1,18 +1,18 @@
 <%
-  @title = "Build ##{@build.number} - #{@project.long_name}"
+  @title = "Build ##{@build.number} - #{@repo.long_name}"
   if @build.is_latest_build?
-    @project_tab = :latest_build
+    @repo_tab = :latest_build
   else
-    @project_tab = :build_history
+    @repo_tab = :build_history
   end
 %>
-<% content_for :project_content do %>
-  <% if @project_tab == :build_history %>
+<% content_for :repo_content do %>
+  <% if @repo_tab == :build_history %>
     <p></p>
-    <%= link_to project_model_builds_path(@project), :class => "btn btn-default btn-sm" do %>
+    <%= link_to repo_model_builds_path(@repo), :class => "btn btn-default btn-sm" do %>
       <span class="glyphicon glyphicon-arrow-left"></span> Show all builds
     <% end %>
   <% end %>
   <%= render :partial => 'builds/build', :locals => { :build => @build } %>
 <% end %>
-<%= render 'projects/layout' %>
+<%= render 'repos/layout' %>

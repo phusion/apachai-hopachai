@@ -57,7 +57,7 @@ module ApachaiHopachai
       @options = {}
       OptionParser.new do |opts|
         nl = "\n#{' ' * 37}"
-        opts.banner = "Usage: appa prepare [OPTIONS] OWNER/PROJECT_NAME [COMMIT]"
+        opts.banner = "Usage: appa prepare [OPTIONS] OWNER/repo_NAME [COMMIT]"
         opts.separator "Prepare running test jobs on the given git repository."
         opts.separator ""
 
@@ -114,9 +114,9 @@ module ApachaiHopachai
         abort "If you set --daemonize then you must also set --log-file."
       end
 
-      @project = Project.find_by_long_name(@argv[0])
-      if !@project
-        abort "Could not find a project with owner and name #{argv[0].inspect}."
+      @repo = Repo.find_by_long_name(@argv[0])
+      if !@repo
+        abort "Could not find a repo with owner and name #{argv[0].inspect}."
       end
       @options[:commit] = @argv[1]
     end
@@ -131,15 +131,15 @@ module ApachaiHopachai
 
     def prepare_build
       @build = Build.new
-      @build.project = @project
+      @build.repo = @repo
       @build.before_revision = @options[:before_sha]
     end
 
     def clone_repo
       if @options[:commit]
-        @logger.info "Cloning from #{@project.repo_url}, commit #{@options[:commit]}"
+        @logger.info "Cloning from #{@repo.url}, commit #{@options[:commit]}"
       else
-        @logger.info "Cloning from #{@project.repo_url}"
+        @logger.info "Cloning from #{@repo.url}"
       end
 
       args = []
@@ -148,7 +148,7 @@ module ApachaiHopachai
         args << "--depth 1"
       end
 
-      if !system("git clone #{args.join(' ')} #{Shellwords.escape @project.repo_url} #{Shellwords.escape @work_dir}/repo")
+      if !system("git clone #{args.join(' ')} #{Shellwords.escape @repo.url} #{Shellwords.escape @work_dir}/repo")
         abort "Git clone failed"
       end
 
@@ -176,7 +176,7 @@ module ApachaiHopachai
       else
         filename = "#{@work_dir}/repo/.travis.yml"
       end
-      @logger.debug("Loading Travis project configuration from #{filename}")
+      @logger.debug("Loading Travis repo configuration from #{filename}")
       @travis = YAML.load_file(filename, :safe => true)
     end
 

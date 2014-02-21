@@ -15,9 +15,9 @@ if !User.exists?(:username => 'admin')
     :password_confirmation => 'password')
 end
 if Rails.env.development?
-  passenger = Project.create!(:owner => User.find_by(:username => 'admin'),
+  passenger = Repo.create!(:owner => User.find_by(:username => 'admin'),
     :name => 'passenger',
-    :repo_url => 'https://github.com/phusion/passenger.git')
+    :url => 'https://github.com/phusion/passenger.git')
   guest = User.create!(
     :username => 'guest',
     :email => 'guest@example.com',

@@ -128,7 +128,7 @@ module ApachaiHopachai
         abort "Job with ID #{@argv[0]} not found."
       end
       @build = @job.build
-      @project = @build.project
+      @repo = @build.repo
     end
 
     def create_work_dir
@@ -156,10 +156,10 @@ module ApachaiHopachai
     def dump_input_for_job_runner
       File.open("#{@work_dir}/input/private_ssh_key", "w") do |f|
         f.chmod(0600)
-        f.write(@project.private_ssh_key)
+        f.write(@repo.private_ssh_key)
       end
-      File.open("#{@work_dir}/input/project.json", "w") do |f|
-        f.write(@project.to_json)
+      File.open("#{@work_dir}/input/repo.json", "w") do |f|
+        f.write(@repo.to_json)
       end
       File.open("#{@work_dir}/input/build.json", "w") do |f|
         f.write(@build.to_json)

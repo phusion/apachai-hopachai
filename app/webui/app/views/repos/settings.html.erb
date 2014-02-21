@@ -1,0 +1,24 @@
+<%
+  @title = "Settings - #{@repo.long_name}"
+  @repo_tab = :settings
+%>
+<% content_for :repo_content do %>
+  <h2>Manually start a build</h2>
+  <p><%= link_to "Start a build", repo_model_builds_path(@repo), :method => "post", :class => "btn btn-default" %></a></p>
+
+  <h2>Public keys</h2>
+  <div class="form-group">
+    <h3>RSA public key</h3>
+    <p><textarea class="form-control" readonly rows="6"><%= @repo.public_key %></textarea></p>
+  </div>
+
+  <div class="form-group">
+    <h3>SSH public key</h3>
+    <p>Add this to your Git hosting service as a deployment key, so that Apachai Hopachai can clone your repository.</p>
+    <p><textarea class="form-control" readonly rows="6"><%= @repo.public_ssh_key %></textarea></p>
+  </div>
+
+  <h2>Delete repo</h2>
+  <p><%= link_to "Delete repo (DANGEROUS)", repo_model_path(@repo), :method => "delete", :class => "btn btn-danger", :confirm => "Really? There is no going back!" %></a></p>
+<% end %>
+<%= render 'repos/layout' %>

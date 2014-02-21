@@ -13,16 +13,16 @@ class ApplicationController < ActionController::Base
   end
 
 private
-  def fetch_project
-    long_name = "#{params[:project_owner]}/#{params[:project_name]}"
-    @project = Project.find_by_long_name(long_name)
-    if !@project
-      render_project_not_found
+  def fetch_repo
+    long_name = "#{params[:repo_owner]}/#{params[:repo_name]}"
+    @repo = Repo.find_by_long_name(long_name)
+    if !@repo
+      render_repo_not_found
     end
   end
 
   def fetch_build
-    @build = @project.builds.find_by(:number => params[:build_number])
+    @build = @repo.builds.find_by(:number => params[:build_number])
     if !@build
       render_build_not_found
     end
@@ -35,13 +35,13 @@ private
     end
   end
 
-  def authorize_project(authorization = :read)
+  def authorize_repo(authorization = :read)
     begin
-      authorize!(authorization, @project)
+      authorize!(authorization, @repo)
       true
     rescue CanCan::AccessDenied
-      logger.warn "Access denied to project."
-      render_project_not_found
+      logger.warn "Access denied to repo."
+      render_repo_not_found
       false
     end
   end
@@ -66,10 +66,10 @@ private
     end
   end
 
-  def render_project_not_found
+  def render_repo_not_found
     respond_to do |format|
-      format.html { render :template => 'projects/not_found.html', :status => 400 }
-      format.json { render :template => 'projects/not_found.json', :status => 400 }
+      format.html { render :template => 'repos/not_found.html', :status => 400 }
+      format.json { render :template => 'repos/not_found.json', :status => 400 }
     end
   end
 

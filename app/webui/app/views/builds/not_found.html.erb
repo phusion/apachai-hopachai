@@ -1,9 +1,9 @@
 <%
-  @title = @project.long_name
-  @project_tab = :build_history
+  @title = @repo.long_name
+  @repo_tab = :build_history
 %>
-<% content_for :project_content do %>
+<% content_for :repo_content do %>
   <h1>Sorry, we can't find this build.</h1>
   <p>If you believe it really exists, please check whether you are authorized to access it.</p>
 <% end %>
-<%= render 'projects/layout' %>
+<%= render 'repos/layout' %>

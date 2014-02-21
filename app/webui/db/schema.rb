@@ -50,10 +50,10 @@ ActiveRecord::Schema.define(version: 20140217105429) do
     t.index ["username"], :name => "index_users_on_username", :unique => true
   end
 
-  create_table "projects", force: true do |t|
+  create_table "repos", force: true do |t|
     t.integer  "owner_id",        null: false
     t.string   "name",            null: false
-    t.string   "repo_url",        null: false
+    t.string   "url",             null: false
     t.datetime "created_at",      null: false
     t.datetime "updated_at",      null: false
     t.string   "webhook_key",     null: false
@@ -61,22 +61,22 @@ ActiveRecord::Schema.define(version: 20140217105429) do
     t.text     "private_key",     null: false
     t.text     "public_ssh_key",  null: false
     t.text     "private_ssh_key", null: false
-    t.index ["owner_id"], :name => "fk__projects_owner_id"
-    t.foreign_key ["owner_id"], "users", ["id"], :on_update => :cascade, :on_delete => :no_action, :name => "fk_projects_owner_id"
+    t.index ["owner_id"], :name => "fk__repos_owner_id"
+    t.foreign_key ["owner_id"], "users", ["id"], :on_update => :cascade, :on_delete => :no_action, :name => "fk_repos_owner_id"
   end
 
   create_table "authorizations", force: true do |t|
-    t.integer "user_id",                    null: false
-    t.integer "project_id",                 null: false
-    t.boolean "admin",      default: false, null: false
-    t.index ["project_id"], :name => "fk__authorizations_project_id"
+    t.integer "user_id",                 null: false
+    t.integer "repo_id",                 null: false
+    t.boolean "admin",   default: false, null: false
+    t.index ["repo_id"], :name => "fk__authorizations_repo_id"
     t.index ["user_id"], :name => "fk__authorizations_user_id"
-    t.foreign_key ["project_id"], "projects", ["id"], :on_update => :cascade, :on_delete => :cascade, :name => "fk_authorizations_project_id"
+    t.foreign_key ["repo_id"], "repos", ["id"], :on_update => :cascade, :on_delete => :cascade, :name => "fk_authorizations_repo_id"
     t.foreign_key ["user_id"], "users", ["id"], :on_update => :cascade, :on_delete => :cascade, :name => "fk_authorizations_user_id"
   end
 
   create_table "builds", force: true do |t|
-    t.integer  "project_id",                            null: false
+    t.integer  "repo_id",                               null: false
     t.string   "state_cd",                              null: false
     t.integer  "number",                                null: false
     t.datetime "created_at",                            null: false
@@ -102,8 +102,8 @@ ActiveRecord::Schema.define(version: 20140217105429) do
     t.text     "after_success_script",                  null: false
     t.text     "after_failure_script",                  null: false
     t.text     "after_script",                          null: false
-    t.index ["project_id"], :name => "fk__builds_project_id"
-    t.foreign_key ["project_id"], "projects", ["id"], :on_update => :cascade, :on_delete => :cascade, :name => "fk_builds_project_id"
+    t.index ["repo_id"], :name => "fk__builds_repo_id"
+    t.foreign_key ["repo_id"], "repos", ["id"], :on_update => :cascade, :on_delete => :cascade, :name => "fk_builds_repo_id"
   end
 
   create_table "jobs", force: true do |t|

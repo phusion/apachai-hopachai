@@ -3,15 +3,15 @@ require 'shellwords'
 class BuildsController < ApplicationController
   skip_before_action :verify_authenticity_token, :only => :create
   skip_before_filter :authenticate_user!, :only => :create
-  before_filter :fetch_project
-  before_filter :authorize_project
+  before_filter :fetch_repo
+  before_filter :authorize_repo
   before_filter :fetch_build, :except => [:index, :create]
   before_filter :authorize_build, :except => [:index, :create]
 
   include CustomUrlHelper
 
   def index
-    @builds = @project.builds
+    @builds = @repo.builds
   end
 
   def create
@@ -23,12 +23,12 @@ class BuildsController < ApplicationController
         authenticate_user!
         return if performed?
 
-        authorize! :create_build, @project
-        BuildWorker.perform_async(@project.id, params)
-        redirect_to project_model_path(@project, :wait_for_build => 1)
+        authorize! :create_build, @repo
+        BuildWorker.perform_async(@repo.id, params)
+        redirect_to repo_model_path(@repo, :wait_for_build => 1)
       end
       format.json do
-        authorize! :create_build, @project
+        authorize! :create_build, @repo
         if check_webhook_key
           BuildWorker.perform_async(params)
         else
@@ -44,6 +44,6 @@ class BuildsController < ApplicationController
 
 private
   def check_webhook_key
-    params[:webhook_key] == @project.webhook_key
+    params[:webhook_key] == @repo.webhook_key
   end
 end

@@ -5,7 +5,7 @@ class CreateAuthorizations < ActiveRecord::Migration
         :on_delete => :cascade,
         :on_update => :cascade
       }
-      t.integer :project_id, :null => false, :foreign_key => {
+      t.integer :repo_id, :null => false, :foreign_key => {
         :on_delete => :cascade,
         :on_update => :cascade
       }

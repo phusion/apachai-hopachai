@@ -1,6 +1,6 @@
 class JobLogsController < ApplicationController
-  before_filter :fetch_project
-  before_filter :authorize_project
+  before_filter :fetch_repo
+  before_filter :authorize_repo
   before_filter :fetch_build
   before_filter :authorize_build
   before_filter :fetch_job

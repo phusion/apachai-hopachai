@@ -49,7 +49,7 @@ class Job < ActiveRecord::Base
 
   def running_time
     if state == :processing
-      distance_of_time_in_words(Time.now, start_time, :include_seconds => true)
+      DateHelper.new.distance_of_time_in_words(Time.now, start_time, :include_seconds => true)
     else
       "-"
     end
@@ -95,7 +95,7 @@ class Job < ActiveRecord::Base
   ##### Delegates to Build #####
 
   def owner; build.owner; end
-  def project; build.project; end
+  def repo; build.repo; end
   def revision; build.revision; end
   def short_revision; build.short_revision; end
   def short_revision_set; build.short_revision_set; end

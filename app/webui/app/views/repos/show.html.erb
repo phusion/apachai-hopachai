@@ -1,8 +1,8 @@
 <%
-  @title = "Latest build - #{@project.long_name}"
-  @project_tab = :latest_build
+  @title = "Latest build - #{@repo.long_name}"
+  @repo_tab = :latest_build
 %>
-<% content_for :project_content do %>
+<% content_for :repo_content do %>
   <% if @wait_for_build %>
     <div class="text-center">
       <h2>Build is now starting. Please wait...</h2>
@@ -11,4 +11,4 @@
     <%= render :partial => 'initial_setup' %>
   <% end %>
 <% end %>
-<%= render 'projects/layout' %>
+<%= render 'repos/layout' %>

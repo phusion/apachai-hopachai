@@ -5,15 +5,15 @@ ApachaiHopachai::Application.routes.draw do
   devise_for :users, :controllers => { :registrations => "registrations" }
   ActiveAdmin.routes(self)
 
-  get    "projects/:project_owner/:project_name(.:format)" => "projects#show", :as => "project"
-  delete "projects/:project_owner/:project_name(.:format)" => "projects#destroy"
-  get    "projects/:project_owner/:project_name/settings(.:format)" => "projects#settings", :as => "project_settings"
-  put    "projects/:project_owner/:project_name/settings(.:format)" => "projects#update_settings"
-  get    "projects/:project_owner/:project_name/builds(.:format)" => "builds#index", :as => "project_builds"
-  post   "projects/:project_owner/:project_name/builds(.:format)" => "builds#create"
-  get    "projects/:project_owner/:project_name/builds/:build_number(.:format)" => "builds#show", :as => "build"
-  get    "projects/:project_owner/:project_name/builds/:build_number/jobs/:job_number(.:format)" => "jobs#show", :as => "job"
-  get    "projects/:project_owner/:project_name/builds/:build_number/jobs/:job_number/log" => "job_logs#show", :as => "job_log"
+  get    "repos/:repo_owner/:repo_name(.:format)" => "repos#show", :as => "repo"
+  delete "repos/:repo_owner/:repo_name(.:format)" => "repos#destroy"
+  get    "repos/:repo_owner/:repo_name/settings(.:format)" => "repos#settings", :as => "repo_settings"
+  put    "repos/:repo_owner/:repo_name/settings(.:format)" => "repos#update_settings"
+  get    "repos/:repo_owner/:repo_name/builds(.:format)" => "builds#index", :as => "repo_builds"
+  post   "repos/:repo_owner/:repo_name/builds(.:format)" => "builds#create"
+  get    "repos/:repo_owner/:repo_name/builds/:build_number(.:format)" => "builds#show", :as => "build"
+  get    "repos/:repo_owner/:repo_name/builds/:build_number/jobs/:job_number(.:format)" => "jobs#show", :as => "job"
+  get    "repos/:repo_owner/:repo_name/builds/:build_number/jobs/:job_number/log" => "job_logs#show", :as => "job_log"
 
   resources :users
 

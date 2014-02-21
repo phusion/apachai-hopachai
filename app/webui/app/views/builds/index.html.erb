@@ -1,13 +1,13 @@
 <%
-  @title = "All builds - #{@project.long_name}"
-  @project_tab = :build_history
+  @title = "All builds - #{@repo.long_name}"
+  @repo_tab = :build_history
 %>
-<% content_for :project_content do %>
+<% content_for :repo_content do %>
   <% if @builds.empty? %>
     <div class="small-container text-center">
       <p></p>
       <p>There are no builds yet. You may manually start a build.</p>
-      <p><%= link_to "Start a build", project_model_builds_path(@project), :method => "post", :class => "btn btn-default" %></a></p>
+      <p><%= link_to "Start a build", repo_model_builds_path(@repo), :method => "post", :class => "btn btn-default" %></a></p>
     </div>
   <% else %>
     <p></p>
@@ -24,4 +24,4 @@
     </table>
   <% end %>
 <% end %>
-<%= render 'projects/layout' %>
+<%= render 'repos/layout' %>

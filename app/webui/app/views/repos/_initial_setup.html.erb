@@ -37,16 +37,16 @@
   <p></p>
   <div class="tab-content">
     <div class="tab-pane active" id="webhook_github">
-      <p>Go to your Github project settings and add the following webhook URL:</p>
-      <pre><%= project_builds_url(:webhook_key => @project.webhook_key) %></pre>
+      <p>Go to your Github repo settings and add the following webhook URL:</p>
+      <pre><%= repo_builds_url(:webhook_key => @repo.webhook_key) %></pre>
     </div>
     <div class="tab-pane" id="webhook_gitlab">
-      <p>Go to your Gitlab project settings and add the following webhook URL:</p>
-      <pre><%= project_builds_url(:webhook_key => @project.webhook_key) %></pre>
+      <p>Go to your Gitlab repo settings and add the following webhook URL:</p>
+      <pre><%= repo_builds_url(:webhook_key => @repo.webhook_key) %></pre>
     </div>
     <div class="tab-pane" id="webhook_other">
       <p>Ensure that every time you push to your Git repository, a request is POSTed to the following webhook URL:</p>
-      <pre><%= project_builds_url(:webhook_key => @project.webhook_key) %></pre>
+      <pre><%= repo_builds_url(:webhook_key => @repo.webhook_key) %></pre>
       <p>The POST payload should follow <a href="http://developer.github.com/v3/activity/events/types/#pushevent">the Github webhook format</a> or <a href="http://demo.gitlab.com/help/web_hooks">the Gitlab webhook format</a>. If it doesn't, Apachai Hopachai will only create builds for the latest <code>master</code> branch commit.</p>
     </div>
   </div>
@@ -64,21 +64,21 @@
   <p></p>
   <div class="tab-content">
     <div class="tab-pane active" id="ssh_key_github">
-      <p>Go to your Github project settings and add the following deployment key:</p>
+      <p>Go to your Github repo settings and add the following deployment key:</p>
       <div class="form-group">
-        <textarea readonly rows="6" class="form-control"><%= @project.public_ssh_key %></textarea>
+        <textarea readonly rows="6" class="form-control"><%= @repo.public_ssh_key %></textarea>
       </div>
     </div>
     <div class="tab-pane" id="ssh_key_gitlab">
-      <p>Go to your Gitlab project settings and add the following deployment key:</p>
+      <p>Go to your Gitlab repo settings and add the following deployment key:</p>
       <div class="form-group">
-        <textarea readonly rows="6" class="form-control"><%= @project.public_ssh_key %></textarea>
+        <textarea readonly rows="6" class="form-control"><%= @repo.public_ssh_key %></textarea>
       </div>
     </div>
     <div class="tab-pane" id="ssh_key_other">
       <p>Ensure that your repository can be cloned using the following SSH public key:</p>
       <div class="form-group">
-        <textarea readonly rows="6" class="form-control"><%= @project.public_ssh_key %></textarea>
+        <textarea readonly rows="6" class="form-control"><%= @repo.public_ssh_key %></textarea>
       </div>
     </div>
   </div>
@@ -94,5 +94,5 @@
   <p>
     If you already pushed before setting up a web hook, then manually start a build:</p>
   </p>
-  <p><%= link_to "Start a build", project_model_builds_path(@project), :method => "post", :class => "btn btn-default" %></a></p>
+  <p><%= link_to "Start a build", repo_model_builds_path(@repo), :method => "post", :class => "btn btn-default" %></a></p>
 </div>

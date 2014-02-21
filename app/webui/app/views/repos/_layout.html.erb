@@ -1,0 +1,11 @@
+<h1><%= link_to @repo.owner.username, @repo.owner %>/<%= link_to @repo.name, repo_model_path(@repo) %></h1>
+
+<ul class="nav nav-tabs">
+  <%= tab_li(:repo_tab, :latest_build, link_to("Latest Build", repo_model_path(@repo))) %>
+  <%= tab_li(:repo_tab, :build_history, link_to("Build History", repo_model_builds_path(@repo))) %>
+  <% if can?(:write, @repo) %>
+    <%= tab_li(:repo_tab, :settings, link_to("Settings", repo_model_settings_path(@repo))) %>
+  <% end %>
+</ul>
+
+<%= yield :repo_content %>

@@ -4,13 +4,13 @@ class BuildWorker
   include Sidekiq::Worker
   sidekiq_options :queue => :builds, :retry => 5
 
-  def perform(project_id, params)
-    project = Project.find(project_id)
+  def perform(repo_id, params)
+    repo = Repo.find(repo_id)
     Dir.mktmpdir do |path|
       command = [
         "#{ApachaiHopachai::BIN_DIR}/appa",
         "prepare",
-        project.long_name
+        repo.long_name
       ]
       head_sha = params['after'] || params['head']
       if head_sha

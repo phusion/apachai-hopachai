@@ -1,6 +1,6 @@
 class JobsController < ApplicationController
-  before_filter :fetch_project
-  before_filter :authorize_project
+  before_filter :fetch_repo
+  before_filter :authorize_repo
   before_filter :fetch_build
   before_filter :authorize_build
   before_filter :fetch_job
@@ -8,10 +8,10 @@ class JobsController < ApplicationController
 
   def show
     begin
-      authorize! :read, @project
+      authorize! :read, @repo
     rescue CanCan::AccessDenied
-      logger.warn "Access denied to project."
-      render_project_not_found
+      logger.warn "Access denied to repo."
+      render_repo_not_found
       return
     end
     begin

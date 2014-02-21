@@ -20,7 +20,7 @@ class JobRunner
 
 private
   def load_input
-    @project = load_json('/input/project.json')
+    @repo = load_json('/input/repo.json')
     @build = load_json('/input/build.json')
     @job = load_json('/input/job.json')
   end
@@ -58,7 +58,7 @@ private
       sh "mkdir", "-p", "/home/appa/repo"
       sh "tar", "xzf", "/input/repo.tar.gz", :chdir => "/home/appa/repo"
     else
-      sh "git", "clone", "--depth=1", @project['repo_url'], "/home/appa/repo"
+      sh "git", "clone", "--depth=1", @repo['url'], "/home/appa/repo"
     end
 
     log "cd /home/appa/repo"

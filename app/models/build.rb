@@ -4,12 +4,12 @@ class Build < ActiveRecord::Base
 
   has_many :jobs, -> { order(:number) },
     :inverse_of => :build, :autosave => true, :dependent => :destroy
-  belongs_to :project, :inverse_of => :builds
+  belongs_to :repo, :inverse_of => :builds
 
   SCRIPT_PROPERTIES.each { |prop| serialize(prop, Array) }
   as_enum :state, [:unprocessed, :processing, :passed, :failed, :errored],
     :strings => true, :slim => true
-  acts_as_list :column => "number", :scope => :project
+  acts_as_list :column => "number", :scope => :repo
   serialize :notifications, Hash
 
   default_value_for :state, :unprocessed
@@ -22,7 +22,7 @@ class Build < ActiveRecord::Base
   ##### Queries #####
 
   def owner
-    project.owner
+    repo.owner
   end
 
   def processed?
@@ -30,7 +30,7 @@ class Build < ActiveRecord::Base
   end
 
   def is_latest_build?
-    id == project.builds.first.id
+    id == repo.builds.first.id
   end
 
   def short_revision
@@ -80,7 +80,7 @@ class Build < ActiveRecord::Base
 
   def as_json(options = nil)
     if options.nil? || options.empty?
-      options = { :except => [:id, :project_id, :state_cd] }
+      options = { :except => [:id, :repo_id, :state_cd] }
     end
     super(options)
   end

@@ -1,7 +1,7 @@
 class CreateBuilds < ActiveRecord::Migration
   def change
     create_table(:builds) do |t|
-      t.integer :project_id, :null => false, :foreign_key => {
+      t.integer :repo_id, :null => false, :foreign_key => {
         :on_delete => :cascade,
         :on_update => :cascade
       }

@@ -1,16 +1,16 @@
 <%
-  @title = "Job ##{@job.long_number} - #{@project.long_name}"
+  @title = "Job ##{@job.long_number} - #{@repo.long_name}"
   if @job.part_of_latest_build?
-    @project_tab = :latest_build
+    @repo_tab = :latest_build
   else
-    @project_tab = :build_history
+    @repo_tab = :build_history
   end
 %>
-<% content_for :project_content do %>
+<% content_for :repo_content do %>
   <p></p>
   <h2><%= link_to "Build ##{@build.number}", build_model_path(@build) %>: job <%= @job.number %></h2>
   <%= render :partial => 'builds/info', :locals => { :build => @job } %>
   <p></p>
   <pre><%= @job.read_log_file %></pre>
 <% end %>
-<%= render 'projects/layout' %>
+<%= render 'repos/layout' %>
