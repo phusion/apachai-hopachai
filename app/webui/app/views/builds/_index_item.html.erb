@@ -1,4 +1,9 @@
 <tr>
-  <td><%= link_to "##{build.number}", build_model_path(build) %></td>
+  <td>
+    <span class="job-icon job-<%= build.state %>"></span>
+    <%= link_to build.number, build_model_path(build) %>
+  </td>
   <td><%= link_to build.subject, build_model_path(build) %></td>
+  <td><%= build.short_revision %></td>
+  <td><%= build.committer_name %></td>
 </tr>
