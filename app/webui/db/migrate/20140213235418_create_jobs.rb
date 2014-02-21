@@ -14,6 +14,7 @@ class CreateJobs < ActiveRecord::Migration
       t.timestamp :created_at, :null => false
 
       t.text :environment, :null => false
+      t.boolean :allow_failures, :null => false, :default => false
 
       t.timestamp :start_time
       t.timestamp :end_time

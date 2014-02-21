@@ -74,44 +74,47 @@ ActiveRecord::Schema.define(version: 20140217105429) do
   end
 
   create_table "builds", force: true do |t|
-    t.integer  "project_id",                           null: false
-    t.string   "state_cd",                             null: false
-    t.integer  "number",                               null: false
-    t.datetime "created_at",                           null: false
+    t.integer  "project_id",                            null: false
+    t.string   "state_cd",                              null: false
+    t.integer  "number",                                null: false
+    t.datetime "created_at",                            null: false
     t.datetime "finalized_at"
-    t.string   "revision",                             null: false
+    t.string   "revision",                              null: false
     t.string   "before_revision"
     t.string   "branch"
     t.string   "tag"
-    t.string   "author_name",                          null: false
-    t.string   "author_email",                         null: false
-    t.string   "committer_name",                       null: false
-    t.string   "committer_email",                      null: false
-    t.string   "subject",                              null: false
+    t.string   "author_name",                           null: false
+    t.string   "author_email",                          null: false
+    t.string   "committer_name",                        null: false
+    t.string   "committer_email",                       null: false
+    t.string   "subject",                               null: false
     t.string   "language"
     t.text     "bundler_args"
-    t.boolean  "init_git_submodules",   default: true, null: false
-    t.text     "before_install_script",                null: false
-    t.text     "install_script",                       null: false
-    t.text     "before_script",                        null: false
-    t.text     "script",                               null: false
-    t.text     "after_success_script",                 null: false
-    t.text     "after_failure_script",                 null: false
-    t.text     "after_script",                         null: false
+    t.boolean  "init_git_submodules",   default: true,  null: false
+    t.boolean  "fast_finish",           default: false, null: false
+    t.text     "notifications",                         null: false
+    t.text     "before_install_script",                 null: false
+    t.text     "install_script",                        null: false
+    t.text     "before_script",                         null: false
+    t.text     "script",                                null: false
+    t.text     "after_success_script",                  null: false
+    t.text     "after_failure_script",                  null: false
+    t.text     "after_script",                          null: false
     t.index ["project_id"], :name => "fk__builds_project_id"
     t.foreign_key ["project_id"], "projects", ["id"], :on_update => :cascade, :on_delete => :cascade, :name => "fk_builds_project_id"
   end
 
   create_table "jobs", force: true do |t|
-    t.integer  "build_id",      null: false
-    t.string   "state_cd",      null: false
-    t.integer  "number",        null: false
-    t.string   "name",          null: false
-    t.string   "log_file_name", null: false
+    t.integer  "build_id",                       null: false
+    t.string   "state_cd",                       null: false
+    t.integer  "number",                         null: false
+    t.string   "name",                           null: false
+    t.string   "log_file_name",                  null: false
     t.integer  "worker_pid"
     t.integer  "lock_version"
-    t.datetime "created_at",    null: false
-    t.text     "environment",   null: false
+    t.datetime "created_at",                     null: false
+    t.text     "environment",                    null: false
+    t.boolean  "allow_failures", default: false, null: false
     t.datetime "start_time"
     t.datetime "end_time"
     t.index ["build_id"], :name => "fk__jobs_build_id"

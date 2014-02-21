@@ -24,6 +24,7 @@ class CreateBuilds < ActiveRecord::Migration
       t.string :language
       t.text :bundler_args
       t.boolean :init_git_submodules, :null => false, :default => true
+      t.boolean :fast_finish, :null => false, :default => false
       t.text :notifications, :null => false
 
       t.text :before_install_script, :null => false
