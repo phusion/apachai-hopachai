@@ -154,9 +154,9 @@ module ApachaiHopachai
     end
 
     def dump_input_for_job_runner
-      File.open("#{@work_dir}/input/private_key", "w") do |f|
+      File.open("#{@work_dir}/input/private_ssh_key", "w") do |f|
         f.chmod(0600)
-        f.write(@project.private_key)
+        f.write(@project.private_ssh_key)
       end
       File.open("#{@work_dir}/input/project.json", "w") do |f|
         f.write(@project.to_json)

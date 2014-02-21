@@ -12,6 +12,8 @@ class CreateProjects < ActiveRecord::Migration
       t.string :webhook_key, :null => false
       t.text :public_key, :null => false
       t.text :private_key, :null => false
+      t.text :public_ssh_key, :null => false
+      t.text :private_ssh_key, :null => false
     end
   end
 end

@@ -29,7 +29,7 @@ private
     File.open("/tmp/git_ssh", "w") do |f|
       f.chmod(0755)
       f.puts "#!/bin/sh\n"
-      f.puts "exec ssh -i /input/private_key \"$@\"\n"
+      f.puts "exec ssh -i /input/private_ssh_key \"$@\"\n"
     end
     ENV['GIT_SSH'] = '/tmp/git_ssh'
     ENV.update(@job['environment'])

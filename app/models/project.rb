@@ -1,5 +1,6 @@
 require 'openssl'
 require 'securerandom'
+require 'tmpdir'
 
 class Project < ActiveRecord::Base
   has_many :builds, -> { order("number DESC") },
@@ -12,7 +13,7 @@ class Project < ActiveRecord::Base
   validates :owner_id, :name, :repo_url, :presence => true
   validates :public_key, :private_key, :presence => true, :unless => :new_record?
 
-  before_create :generate_key_pair
+  before_create :generate_key_pairs
 
   def self.find_by_long_name(long_name)
     owner, name = long_name.split("/", 2)
@@ -61,8 +62,21 @@ class Project < ActiveRecord::Base
   end
 
 private
-  def generate_key_pair
-    key = OpenSSL::PKey::RSA.new(2048)
+  def generate_key_pairs
+    key = OpenSSL::PKey::RSA.new(4096)
+    Dir.mktmpdir do |path|
+      pid = Process.spawn("ssh-keygen", "-C", "apachai-hopachai", "-b", "4096", "-f", "#{path}/key",
+        :in  => ["/dev/null", "r"],
+        :out => :out,
+        :err => :err,
+        :close_others => true)
+      Process.waitpid(pid)
+      if $?.exitstatus != 0
+        raise "Cannot generate SSH keys."
+      end
+      self.private_ssh_key = File.read("#{path}/key")
+      self.public_ssh_key = File.read("#{path}/key.pub")
+    end
     self.private_key = key.to_pem
     self.public_key = key.public_key.to_pem
   end

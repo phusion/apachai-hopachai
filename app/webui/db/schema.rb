@@ -51,14 +51,16 @@ ActiveRecord::Schema.define(version: 20140217105429) do
   end
 
   create_table "projects", force: true do |t|
-    t.integer  "owner_id",    null: false
-    t.string   "name",        null: false
-    t.string   "repo_url",    null: false
-    t.datetime "created_at",  null: false
-    t.datetime "updated_at",  null: false
-    t.string   "webhook_key", null: false
-    t.text     "public_key",  null: false
-    t.text     "private_key", null: false
+    t.integer  "owner_id",        null: false
+    t.string   "name",            null: false
+    t.string   "repo_url",        null: false
+    t.datetime "created_at",      null: false
+    t.datetime "updated_at",      null: false
+    t.string   "webhook_key",     null: false
+    t.text     "public_key",      null: false
+    t.text     "private_key",     null: false
+    t.text     "public_ssh_key",  null: false
+    t.text     "private_ssh_key", null: false
     t.index ["owner_id"], :name => "fk__projects_owner_id"
     t.foreign_key ["owner_id"], "users", ["id"], :on_update => :cascade, :on_delete => :no_action, :name => "fk_projects_owner_id"
   end

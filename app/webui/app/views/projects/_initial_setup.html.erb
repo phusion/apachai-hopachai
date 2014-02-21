@@ -40,7 +40,7 @@
       <p>Go to your Github project settings and add the following webhook URL:</p>
       <pre><%= project_builds_url(:webhook_key => @project.webhook_key) %></pre>
     </div>
-    <div class="tab-pane active" id="webhook_gitlab">
+    <div class="tab-pane" id="webhook_gitlab">
       <p>Go to your Gitlab project settings and add the following webhook URL:</p>
       <pre><%= project_builds_url(:webhook_key => @project.webhook_key) %></pre>
     </div>
@@ -51,7 +51,39 @@
     </div>
   </div>
 
-  <h3>3. Start a build</h3>
+  <h3>3. Add SSH public key</h3>
+  <p>
+    If your Git repository requires authorization, then install the Apachai Hopachai SSH public key
+    so that Apachai Hopachai can clone your repository.
+  </p>
+  <ul class="nav nav-pills">
+    <li class="active"><a href="#ssh_key_github" data-toggle="pill">Github</a></li>
+    <li><a href="#ssh_key_gitlab" data-toggle="pill">Gitlab</a></li>
+    <li><a href="#ssh_key_other" data-toggle="pill">Other</a></li>
+  </ul>
+  <p></p>
+  <div class="tab-content">
+    <div class="tab-pane active" id="ssh_key_github">
+      <p>Go to your Github project settings and add the following deployment key:</p>
+      <div class="form-group">
+        <textarea readonly rows="6" class="form-control"><%= @project.public_ssh_key %></textarea>
+      </div>
+    </div>
+    <div class="tab-pane" id="ssh_key_gitlab">
+      <p>Go to your Gitlab project settings and add the following deployment key:</p>
+      <div class="form-group">
+        <textarea readonly rows="6" class="form-control"><%= @project.public_ssh_key %></textarea>
+      </div>
+    </div>
+    <div class="tab-pane" id="ssh_key_other">
+      <p>Ensure that your repository can be cloned using the following SSH public key:</p>
+      <div class="form-group">
+        <textarea readonly rows="6" class="form-control"><%= @project.public_ssh_key %></textarea>
+      </div>
+    </div>
+  </div>
+
+  <h3>4. Start a build</h3>
   <p>
     Push to your Git repository. Apachai Hopachai will detect your push and will start a build.
   </p>
