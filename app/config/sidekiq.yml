@@ -1,4 +1,9 @@
+:concurrency: 4
 :queues:
   - builds
   - jobs
   - notifications
+:limits:
+  builds: 1
+  jobs: 2
+  notifications: 1

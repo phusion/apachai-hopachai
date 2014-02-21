@@ -198,6 +198,8 @@ GEM
       json
       redis (>= 3.0.6)
       redis-namespace (>= 1.3.1)
+    sidekiq-limit_fetch (2.1.3)
+      sidekiq (>= 2.6.5, < 3)
     simple_enum (1.6.8)
       activesupport (>= 3.0.0)
     simple_form (3.0.1)
@@ -267,6 +269,7 @@ DEPENDENCIES
   sass-rails (~> 4.0.0)
   schema_plus
   sidekiq
+  sidekiq-limit_fetch
   simple_enum
   simple_form
   sinatra (>= 1.3.0)
