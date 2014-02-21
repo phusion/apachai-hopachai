@@ -416,6 +416,7 @@ module ApachaiHopachai
     def log_error(e)
       if e.is_a?(SignalException)
         @logger.error "Interrupted by signal #{e.signo}"
+        @logger.debug "  " << e.backtrace.join("\n  ")
       elsif !e.is_a?(Exited) || !e.logged?
         @logger.error("ERROR: #{e.message} (#{e.class}):\n    " +
           e.backtrace.join("\n    "))
