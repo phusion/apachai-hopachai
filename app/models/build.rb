@@ -10,6 +10,7 @@ class Build < ActiveRecord::Base
   as_enum :state, [:unprocessed, :processing, :passed, :failed, :errored],
     :strings => true, :slim => true
   acts_as_list :column => "number", :scope => :project
+  serialize :notifications, Hash
 
   default_value_for :state, :unprocessed
 
@@ -91,6 +92,7 @@ class Build < ActiveRecord::Base
     set_property_from_travis_config(travis_config, :language)
     set_property_from_travis_config(travis_config, :bundler_args)
     set_property_from_travis_config(travis_config, :init_git_submodules)
+    set_property_from_travis_config(travis_config, :notifications)
     set_script_property_from_travis_config(travis_config, :before_install_script, :before_install)
     set_script_property_from_travis_config(travis_config, :install_script, :install)
     set_script_property_from_travis_config(travis_config, :before_script, :before_script)
