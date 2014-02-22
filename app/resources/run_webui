@@ -1,11 +1,10 @@
 #!/bin/bash
 set -e
 source /etc/environment
-user=`stat -L --printf %U /appa`
-cd /appa/webui
+cd /app/webui
 export RAILS_ENV=${RAILS_ENV:-development}
-status=`/sbin/setuser $user passenger status`
+status=`/sbin/setuser app passenger status`
 if echo "$status" | grep -q "is running"; then
-	/sbin/setuser $user passenger stop
+	/sbin/setuser app passenger stop || true
 fi
-exec /sbin/setuser $user passenger start -e $RAILS_ENV
+exec /sbin/setuser app passenger start -e $RAILS_ENV

@@ -1,11 +1,10 @@
 #!/bin/bash
 set -e
 source /etc/environment
-user=`stat -L --printf %U /appa`
-cd /appa/webui
-export JOB_CONCURRENCY=${RAILS_ENV:-2}
+cd /app/webui
+export JOB_CONCURRENCY=${JOB_CONCURRENCY:-2}
 export RAILS_ENV=${RAILS_ENV:-development}
-exec /sbin/setuser $user /appa/bin/sidekiq \
+exec /sbin/setuser app /appa/bin/sidekiq \
 	-C ../config/sidekiq.yml \
 	-c $JOB_CONCURRENCY \
 	-l log/sidekiq.log \

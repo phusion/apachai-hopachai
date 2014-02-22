@@ -21,7 +21,7 @@ function apt_get_install()
 function start_runit_service()
 {
 	if [[ $TARGET_USER != vagrant ]]; then
-		(cd /etc/service && exec runsv $1)
+		(cd /etc/service && exec runsv $1) &
 	fi
 	while ! [[ -e /etc/service/$1/supervise/ok ]]; do
 		sleep 1
@@ -34,6 +34,12 @@ export DEBIAN_FRONTEND=noninteractive
 SELFDIR=`dirname "$0"`
 set -x
 cd "$SELFDIR"
+
+# Fix up permissions and directories.
+if [[ $TARGET_USER != vagrant ]]; then
+	mkdir -p webui/log
+	chown -R "$TARGET_USER:" .
+fi
 
 # Add APT sources.
 if ! [[ -e /etc/apt/sources.list.d/docker.list ]]; then
@@ -127,5 +133,9 @@ start_runit_service webui
 
 # Shut down all daemons before exiting 'docker build'.
 if [[ $TARGET_USER != vagrant ]]; then
-	sv stop /etc/service/*
+	for service in /etc/service/*; do
+		if [[ -e $service/supervise/ok ]]; then
+			sv stop $service
+		fi
+	done
 fi

@@ -1,0 +1,4 @@
+#!/bin/bash
+set -e
+eval "$(./dade/dump.rb Dadefile)"
+exec docker run -t -i -privileged -v `pwd`/$DADEFILE_APP_DIR_PATH:/app $DADEFILE_NAME:$DADEFILE_VERSION.dev

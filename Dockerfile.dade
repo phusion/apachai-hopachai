@@ -1,0 +1,4 @@
+FROM phusion/passenger-ruby21:0.9.6
+ENV HOME /root
+RUN /app/setup app && apt-get clean
+CMD ["/sbin/my_init"]

@@ -14,20 +14,21 @@ function cleanup()
 
 trap cleanup EXIT
 
-CONTAINER_NAME=${CONTAINER_NAME:-my/dadeapp:dev}
+eval "$(./dade/dump.rb Dadefile)"
 
 # List all app files.
 IFS=$'\n'
-files=(`./dade/list_files.rb app`)
+app_files=(`./dade/list_files.rb "$DADEFILE_APP_DIR_PATH"`)
 unset IFS
 
 # Create temporary build directory for 'docker build'.
 builddir=`mktemp -d /tmp/dade.XXXXXXX`
-./dade/copy_files.rb "${files[@]}"  "$builddir"
+./dade/copy_files.rb "$DADEFILE_APP_DIR_PATH" "${app_files[@]}" "$builddir/$DADEFILE_APP_DIR_CONTAINER_BUILD_PATH"
 
 # Preprocess Dockerfile and put it in the build directory.
-cp app/Dockerfile "$builddir/"
+./dade/process_dockerfile_dade.rb "$DADEFILE_DOCKERFILE_DADE" "$DADEFILE_APP_DIR_CONTAINER_BUILD_PATH" > \
+	"$builddir/Dockerfile"
 
 # Run 'docker build'.
 pushd "$builddir"
-docker build -t $CONTAINER_NAME .
+docker build -t "$DADEFILE_NAME:$DADEFILE_VERSION.dev" .
