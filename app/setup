@@ -26,7 +26,10 @@ function start_runit_service()
 	while ! [[ -e /etc/service/$1/supervise/ok ]]; do
 		sleep 1
 	done
-	sv start /etc/service/$1
+	sv start /etc/service/$1 || {
+		cat webui/log/*.log
+		exit 1
+	}
 	sleep 1
 }
 

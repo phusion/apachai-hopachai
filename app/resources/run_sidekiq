@@ -4,7 +4,7 @@ source /etc/environment
 cd /app/webui
 export JOB_CONCURRENCY=${JOB_CONCURRENCY:-2}
 export RAILS_ENV=${RAILS_ENV:-development}
-exec /sbin/setuser app /appa/bin/sidekiq \
+exec /sbin/setuser app /app/bin/sidekiq \
 	-C ../config/sidekiq.yml \
 	-c $JOB_CONCURRENCY \
 	-l log/sidekiq.log \

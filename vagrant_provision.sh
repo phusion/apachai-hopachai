@@ -55,7 +55,7 @@ gem install bundler rake --no-rdoc --no-ri
 
 cp app/resources/setuser /sbin/
 
-if ! [[ -e /appa ]]; then
-	ln -s /vagrant/app /appa
+if ! [[ -e /app ]]; then
+	ln -s /vagrant/app /app
 fi
 /vagrant/app/setup vagrant
