@@ -1,0 +1,16 @@
+#!/bin/bash
+dir=`dirname "$0"`
+dir=`cd "$dir"; pwd`
+
+command="$1"
+shift
+
+if [[ "$command" = "" ]]; then
+	echo "Usage:"
+	echo
+	echo "  dade build"
+	echo "  dade run"
+	exit 1
+else
+	exec "$dir/dade-$command" "$@"
+fi

@@ -3,3 +3,4 @@ version: 1.0
 app_dir: app
 app_mount_uid: 9999
 app_mount_gid: 9999
+privileged: true

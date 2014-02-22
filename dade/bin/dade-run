@@ -1,0 +1,46 @@
+#!/bin/bash
+set -e
+DADEROOT=`dirname "$0"`
+DADEROOT=`cd "$DADEROOT/.."; pwd`
+source "$DADEROOT/bashlib/library.sh"
+
+if ! [[ `id -a` =~ fuse ]]; then
+	echo "The current user (`whoami`) is not a member of the 'fuse' group. Please add '`whoami`' to the 'fuse' group:"
+	echo
+	echo "  sudo usermod -a -G fuse `whoami`"
+	echo
+	echo "If '`whoami`' is already part of the 'fuse' group, please relogin to activate the group membership."
+	exit 1
+fi
+
+"$DADEROOT/scripts/prepare_keys_for_sshfs"
+dump=$("$DADEROOT/scripts/dump.rb" Dadefile)
+eval "$dump"
+
+sshfs_options=ssh_command=$DADEROOT/scripts/ssh,idmap=user,allow_other
+if [[ "$DADEFILE_APP_MOUNT_UID" != "" ]]; then
+	sshfs_options="$sshfs_options,uid=$DADEFILE_APP_MOUNT_UID"
+fi
+if [[ "$DADEFILE_APP_MOUNT_GID" != "" ]]; then
+	sshfs_options="$sshfs_options,gid=$DADEFILE_APP_MOUNT_GID"
+fi
+
+docker_options=
+if [[ "$DADEFILE_PRIVILEGED" = true ]]; then
+	docker_options="$docker_options -privileged"
+fi
+
+workdir=`mktemp -d /tmp/dademount.XXXXXXX`
+
+function cleanup()
+{
+	echo " --> Unmounting app directory"
+	sudo umount "$workdir/mount" 2>/dev/null ||
+		sudo umount -l "$workdir/mount"
+	echo " --> Removing Dade temporary directory"
+	rm -rf --one-file-system "$workdir" 2>/dev/null
+}
+
+mkdir "$workdir/mount"
+sshfs -o $sshfs_options localhost:`pwd`/$DADEFILE_APP_DIR_PATH/ "$workdir/mount"
+docker run -t -i $docker_options -v "$workdir/mount":/app $DADEFILE_NAME:$DADEFILE_VERSION.dev

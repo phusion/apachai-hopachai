@@ -1,5 +1,8 @@
 #!/bin/bash
 set -e
+DADEROOT=`dirname "$0"`
+DADEROOT=`cd "$DADEROOT/.."; pwd`
+source "$DADEROOT/bashlib/library.sh"
 
 function cleanup()
 {
@@ -14,31 +17,32 @@ function cleanup()
 
 trap cleanup EXIT
 
-eval "$(./dade/dump.rb Dadefile)"
+dump=$("$DADEROOT/scripts/dump.rb" Dadefile)
+eval "$dump"
 
 # List all app files.
 IFS=$'\n'
-app_files=(`./dade/list_files.rb "$DADEFILE_APP_DIR_PATH"`)
+app_files=(`"$DADEROOT/scripts/list_files.rb" "$DADEFILE_APP_DIR_PATH"`)
 if [[ "$DADEFILE_IMAGE_RESOURCES_DIR_PATH" != "" ]]; then
-	image_resources_files=(`./dade/list_files.rb "$DADEFILE_IMAGE_RESOURCES_DIR_PATH"`)
+	image_resources_files=(`"$DADEROOT/scripts/list_files" "$DADEFILE_IMAGE_RESOURCES_DIR_PATH"`)
 fi
 unset IFS
 
 # Create temporary build directory for 'docker build'.
 builddir=`mktemp -d /tmp/dade.XXXXXXX`
-./dade/copy_files.rb "app files" \
+"$DADEROOT/scripts/copy_files.rb" "app files" \
 	"$DADEFILE_APP_DIR_PATH" \
 	"$builddir/$DADEFILE_APP_DIR_BUILD_PATH" \
 	"${app_files[@]}"
 if [[ "$DADEFILE_IMAGE_RESOURCES_DIR_PATH" != "" ]]; then
-	./dade/copy_files.rb "image resource files" \
+	"$DADEROOT/scripts/copy_files.rb" "image resource files" \
 		"$DADEFILE_IMAGE_RESOURCES_DIR_PATH" \
 		"$builddir/$DADEFILE_IMAGE_RESOURCES_DIR_BUILD_PATH" \
 		"${image_resources_files[@]}"
 fi
 
 # Preprocess Dockerfile and put it in the build directory.
-./dade/process_dockerfile_dade.rb "$DADEFILE_DOCKERFILE_DADE" "$DADEFILE_APP_DIR_BUILD_PATH" > \
+"$DADEROOT/scripts/process_dockerfile_dade.rb" "$DADEFILE_DOCKERFILE_DADE" "$DADEFILE_APP_DIR_BUILD_PATH" > \
 	"$builddir/Dockerfile"
 
 # Run 'docker build'.

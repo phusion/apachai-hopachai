@@ -1,0 +1,21 @@
+#!/bin/bash
+set -e
+
+if ! [[ -e ~/.dade ]]; then
+	mkdir -p ~/.dade
+	chmod 700 ~/.dade
+fi
+if ! [[ -e ~/.dade/ssh_key ]] || ! [[ -e ~/.dade/ssh_key.pub ]]; then
+	rm -f ~/.dade/ssh_key ~/.dade/ssh_key.pub
+	ssh-keygen -N "" -b 1024 -f ~/.dade/ssh_key -C "dade sshfs public key" >/dev/null
+fi
+if ! [[ -e ~/.ssh ]]; then
+	mkdir -p ~/.ssh
+	chmod 700 ~/.ssh
+fi
+if ! [[ -e ~/.ssh/authorized_keys ]]; then
+	echo -n >> ~/.ssh/authorized_keys
+fi
+if ! grep -q -F "`cat ~/.dade/ssh_key.pub`" ~/.ssh/authorized_keys; then
+	cat ~/.dade/ssh_key.pub >> ~/.ssh/authorized_keys
+fi

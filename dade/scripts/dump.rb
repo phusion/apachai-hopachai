@@ -18,6 +18,7 @@ def dump_dadefile(dadefile)
   dump_key(dadefile['dockerfile_dade'], "DOCKERFILE_DADE")
   dump_key(dadefile['app_mount_uid'], "APP_MOUNT_UID")
   dump_key(dadefile['app_mount_gid'], "APP_MOUNT_GID")
+  dump_key(dadefile['privileged'], "PRIVILEGED")
 end
 
 def to_string_or_nil(value)
