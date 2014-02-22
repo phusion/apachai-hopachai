@@ -12,42 +12,40 @@ def dump_dadefile(dadefile)
   dump_key(dadefile['name'], 'NAME')
   dump_key(dadefile['version'], 'VERSION')
   dump_key(dadefile['app_dir']['path'], 'APP_DIR_PATH')
-  dump_key(dadefile['app_dir']['container_build_path'], 'APP_DIR_CONTAINER_BUILD_PATH')
-  # dump_key(dadefile['container_build_files']['path'], 'CONTAINER_BUILD_FILES_PATH')
-  # dump_key(dadefile['container_build_files']['container_build_path'], 'CONTAINER_BUILD_FILES_CONTAINER_BUILD_PATH')
+  dump_key(dadefile['app_dir']['build_path'], 'APP_DIR_BUILD_PATH')
+  dump_key(dadefile['image_resources_dir']['path'], 'IMAGE_RESOURCES_DIR_PATH')
+  dump_key(dadefile['image_resources_dir']['build_path'], 'IMAGE_RESOURCES_DIR_BUILD_PATH')
   dump_key(dadefile['dockerfile_dade'], "DOCKERFILE_DADE")
   dump_key(dadefile['app_mount_uid'], "APP_MOUNT_UID")
   dump_key(dadefile['app_mount_gid'], "APP_MOUNT_GID")
 end
 
+def to_string_or_nil(value)
+  if value.nil?
+    nil
+  else
+    value.to_s
+  end
+end
+
 def normalize_cluster_member(member, name = nil)
   member = member.dup
 
+  if !member['app_dir'].is_a?(Hash)
+    path = to_string_or_nil(member['app_dir'])
+    member['app_dir'] = { 'path' => path }
+  end
+  if !member['image_resources_dir'].is_a?(Hash)
+    path = to_string_or_nil(member['image_resources_dir'])
+    member['image_resources_dir'] = { 'path' => path }
+  end
+
   member['name'] ||= name
   member['version'] ||= '0.1'
-  member['app_dir'] ||= '.'
-  # member['container_build_files'] ||= '.'
-  member['dockerfile_dade'] ||= 'Dockerfile.dade'
-
-  if !member['app_dir'].is_a?(Hash)
-    path = member['app_dir'].to_s
-    member['app_dir'] = {
-      'path' => path,
-      'container_build_path' => 'app'
-    }
-  end
-  # if !member['container_build_files'].is_a?(Hash)
-  #   path = member['container_build_files'].to_s
-  #   member['container_build_files'] = {
-  #     'path' => path,
-  #     'container_build_path' => 'build'
-  #   }
-  # end
-
   member['app_dir']['path'] ||= '.'
-  member['app_dir']['container_build_path'] ||= 'app'
-  # member['container_build_files']['path'] ||= '.'
-  # member['container_build_files']['container_build_path'] ||= 'build'
+  member['app_dir']['build_path'] ||= 'app'
+  member['image_resources_dir']['build_path'] ||= 'resources'
+  member['dockerfile_dade'] ||= 'Dockerfile.dade'
 
   if !member['name']
     abort "You must specify a 'name' in your Dadefile."

@@ -19,14 +19,26 @@ eval "$(./dade/dump.rb Dadefile)"
 # List all app files.
 IFS=$'\n'
 app_files=(`./dade/list_files.rb "$DADEFILE_APP_DIR_PATH"`)
+if [[ "$DADEFILE_IMAGE_RESOURCES_DIR_PATH" != "" ]]; then
+	image_resources_files=(`./dade/list_files.rb "$DADEFILE_IMAGE_RESOURCES_DIR_PATH"`)
+fi
 unset IFS
 
 # Create temporary build directory for 'docker build'.
 builddir=`mktemp -d /tmp/dade.XXXXXXX`
-./dade/copy_files.rb "$DADEFILE_APP_DIR_PATH" "${app_files[@]}" "$builddir/$DADEFILE_APP_DIR_CONTAINER_BUILD_PATH"
+./dade/copy_files.rb "app files" \
+	"$DADEFILE_APP_DIR_PATH" \
+	"$builddir/$DADEFILE_APP_DIR_BUILD_PATH" \
+	"${app_files[@]}"
+if [[ "$DADEFILE_IMAGE_RESOURCES_DIR_PATH" != "" ]]; then
+	./dade/copy_files.rb "image resource files" \
+		"$DADEFILE_IMAGE_RESOURCES_DIR_PATH" \
+		"$builddir/$DADEFILE_IMAGE_RESOURCES_DIR_BUILD_PATH" \
+		"${image_resources_files[@]}"
+fi
 
 # Preprocess Dockerfile and put it in the build directory.
-./dade/process_dockerfile_dade.rb "$DADEFILE_DOCKERFILE_DADE" "$DADEFILE_APP_DIR_CONTAINER_BUILD_PATH" > \
+./dade/process_dockerfile_dade.rb "$DADEFILE_DOCKERFILE_DADE" "$DADEFILE_APP_DIR_BUILD_PATH" > \
 	"$builddir/Dockerfile"
 
 # Run 'docker build'.
