@@ -40,9 +40,15 @@ if [[ "$DADEFILE_IMAGE_RESOURCES_DIR_PATH" != "" ]]; then
 		"$builddir/$DADEFILE_IMAGE_RESOURCES_DIR_BUILD_PATH" \
 		"${image_resources_files[@]}"
 fi
+if [[ -e "$DADEROOT/integrations/$DADEFILE_TYPE" ]]; then
+	mkdir "$builddir/_dade_integration"
+	cp -R "$DADEROOT/integrations/$DADEFILE_TYPE" "$builddir/_dade_integration/"
+fi
 
 # Preprocess Dockerfile and put it in the build directory.
-"$DADEROOT/scripts/process_dockerfile_dade.rb" "$DADEFILE_DOCKERFILE_DADE" "$DADEFILE_APP_DIR_BUILD_PATH" > \
+"$DADEROOT/scripts/process_dockerfile_dade.rb" \
+	"$DADEFILE_DOCKERFILE_DADE" \
+	"$DADEFILE_APP_DIR_BUILD_PATH" > \
 	"$builddir/Dockerfile"
 
 # Run 'docker build'.

@@ -1,5 +1,6 @@
 name: apachai-hopachai
 version: 1.0
+type: rails
 app_dir: app
 app_mount_uid: 9999
 app_mount_gid: 9999

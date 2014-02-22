@@ -1,0 +1,22 @@
+#!/bin/bash
+set -e
+
+rm -rf /app/.bundle
+cp -R /var/lib/dade_gem_bundle_config /app/.bundle
+
+if [[ "$DADE_ENV" == production ]]; then
+	pushd /app/public
+	if [[ -e assets ]]; then
+		if [[ -h assets ]]; then
+			rm -f assets
+		else
+			i=0
+			while [[ -e assets.dade-backup$i ]]; do
+				(( i++ ))
+			done
+			mv assets assets.dade-backup$i
+		fi
+	fi
+	ln -s ../_dade_rails_assets assets
+	popd
+fi

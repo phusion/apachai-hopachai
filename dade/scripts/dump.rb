@@ -18,6 +18,7 @@ end
 def dump_dadefile(dadefile)
   dump_key(dadefile['name'], 'NAME')
   dump_key(dadefile['version'], 'VERSION')
+  dump_key(dadefile['type'], 'TYPE')
   dump_key(dadefile['app_dir']['path'], 'APP_DIR_PATH')
   dump_key(dadefile['app_dir']['build_path'], 'APP_DIR_BUILD_PATH')
   dump_key(dadefile['image_resources_dir']['path'], 'IMAGE_RESOURCES_DIR_PATH')
@@ -57,8 +58,15 @@ def normalize_cluster_member(member, name = nil)
   member['image_resources_dir']['build_path'] ||= 'resources'
   member['dockerfile_dade'] ||= 'Dockerfile.dade'
 
+  errors = []
   if !member['name']
-    abort "You must specify a 'name' in your Dadefile."
+    errors << "You must specify a 'name' in your Dadefile."
+  end
+  if !member['type']
+    errors << "You must specify a 'type' in your Dadefile."
+  end
+  if !errors.empty?
+    abort "Errors detected in your Dadefile:\n" + errors.join("\n")
   end
 
   member
