@@ -3,7 +3,9 @@ require 'yaml'
 require 'shellwords'
 
 def dump_key(value, name)
-  puts "DADEFILE_#{name}=#{Shellwords.escape value}"
+  if !value.nil?
+    puts "DADEFILE_#{name}=#{Shellwords.escape value}"
+  end
 end
 
 def dump_dadefile(dadefile)
@@ -14,6 +16,8 @@ def dump_dadefile(dadefile)
   # dump_key(dadefile['container_build_files']['path'], 'CONTAINER_BUILD_FILES_PATH')
   # dump_key(dadefile['container_build_files']['container_build_path'], 'CONTAINER_BUILD_FILES_CONTAINER_BUILD_PATH')
   dump_key(dadefile['dockerfile_dade'], "DOCKERFILE_DADE")
+  dump_key(dadefile['app_mount_uid'], "APP_MOUNT_UID")
+  dump_key(dadefile['app_mount_gid'], "APP_MOUNT_GID")
 end
 
 def normalize_cluster_member(member, name = nil)
