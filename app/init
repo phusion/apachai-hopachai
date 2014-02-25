@@ -5,18 +5,20 @@ set -e
 export DADE_ENV=${DADE_ENV:-${RAILS_ENV:-${RACK_ENV:-production}}}
 export RAILS_ENV=$DADE_ENV
 export RACK_ENV=$DADE_ENV
+export LC_ALL=C.UTF-8
 echo $DADE_ENV > /etc/container_environment/DADE_ENV
 echo $RAILS_ENV > /etc/container_environment/RAILS_ENV
 echo $RACK_ENV > /etc/container_environment/RACK_ENV
 
 echo " --> Initializing gem bundle"
-rm -rf /app/.bundle
+rm -rf /app/.bundle /app/webui/.bundle
 cp -R /var/lib/dade_gem_bundle_config /app/.bundle
-chown -R app: /app/.bundle
+cp -R /var/lib/dade_gem_bundle_config /app/webui/.bundle
+chown -R app: /app/.bundle /app/webui/.bundle
 
 if [[ "$DADE_ENV" == production ]]; then
 	echo " --> Initializing precompiled assets"
-	pushd /app/public >/dev/null
+	pushd /app/webui/public >/dev/null
 	if [[ -h assets ]]; then
 		rm -f assets
 	elif [[ -e assets ]]; then
@@ -27,13 +29,22 @@ if [[ "$DADE_ENV" == production ]]; then
 		mv assets assets.dade-backup$i
 	fi
 	ln -s ../_dade_rails_assets assets
-	popd 2>/dev/null
+	popd >/dev/null
 
-	if [[ "$RAILS_DB_MIGRATE" = 0 ]]; then
+	if [[ "$RAILS_DB_MIGRATE" == "0" ]]; then
 		echo " --> RAILS_DB_MIGRATE=0 set, skipping database migrations"
 	else
+		echo " --> Starting database server"
+		rm -rf /etc/service/postgresql/supervise
+		(cd /etc/service && exec runsv postgresql) &
+		while ! [[ -e /etc/service/postgresql/supervise/ok ]]; do
+			sleep 0.5
+		done
+		sv start /etc/service/postgresql
+		sleep 0.5
+
 		echo " --> Inspecting database state"
-		pushd /app >/dev/null
+		pushd /app/webui >/dev/null
 		if setuser app bundle exec rake db:version >/tmp/db_version 2>/dev/null; then
 			db_version=`cat /tmp/db_version | sed 's/.*: //'`
 			rm /tmp/db_version
@@ -49,6 +60,11 @@ if [[ "$DADE_ENV" == production ]]; then
 			echo " --> Running database migrations"
 			setuser app bundle exec rake db:migrate
 		fi
-		popd 2>/dev/null
+		popd
+
+		echo " --> Stopping database server"
+		sv stop /etc/service/postgresql
+		sv down /etc/service/postgresql
+		sleep 0.5
 	fi
 fi

@@ -1,16 +1,30 @@
 #!/bin/bash
 set -e
 
+cd /app
+
 # When running 'dade run', the mounted app has no .bundle directory
 # or may have a wrong .bundle directory. We store the .bundle directory
 # here and restore it during 'dade run'.
-echo " --> Installing gem bundle"
+echo " ---> Installing gem bundle"
 bundle install --path /var/lib/dade_gem_bundle
 cp -dpR .bundle /var/lib/dade_gem_bundle_config
 
 # Precompiled assets should not be used when the app is running in
 # development mode, so we move the assets elsewhere and decide during
 # 'dade run' whether to move them back.
-echo " --> Precompiling assets"
+echo " ---> Precompiling assets"
+if [[ -h public/assets ]]; then
+	rm public/assets
+fi
 bundle exec rake assets:precompile
+if [[ -e _dade_rails_assets ]]; then
+	rm -rf _dade_rails_assets
+fi
 mv public/assets _dade_rails_assets
+
+echo " ---> Installing init scripts"
+cp /var/lib/dade_integration/run /etc/my_init.d/10_dade_rails
+
+echo " ---> Cleaning up"
+rm -rf /var/lib/dade_integration

@@ -1,4 +1,9 @@
-FROM phusion/passenger-ruby21:0.9.6
+FROM phusion/passenger-ruby21:0.9.7
 ENV HOME /root
+
+PREADD app/presetup /tmp/presetup
+PRERUN /tmp/presetup && rm /tmp/presetup
+
 RUN /app/setup app && apt-get clean
+
 CMD ["/sbin/my_init"]

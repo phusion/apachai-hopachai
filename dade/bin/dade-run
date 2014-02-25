@@ -48,4 +48,4 @@ function cleanup()
 
 mkdir "$workdir/mount"
 sshfs -o $sshfs_options localhost:`pwd`/$DADEFILE_APP_DIR_PATH/ "$workdir/mount"
-docker run -t -i $docker_options -v "$workdir/mount":/app $DADEFILE_NAME:$DADEFILE_VERSION.dev
+docker run -t -i -e DADE_ENV=development $docker_options -v "$workdir/mount":/app $DADEFILE_NAME:$DADEFILE_VERSION.dev

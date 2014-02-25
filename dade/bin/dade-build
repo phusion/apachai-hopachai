@@ -29,7 +29,7 @@ fi
 unset IFS
 
 # Create temporary build directory for 'docker build'.
-builddir=`mktemp -d /tmp/dade.XXXXXXX`
+builddir=`mktemp -d /tmp/dade-build.XXXXXXX`
 "$DADEROOT/scripts/copy_files.rb" "app files" \
 	"$DADEFILE_APP_DIR_PATH" \
 	"$builddir/$DADEFILE_APP_DIR_BUILD_PATH" \
@@ -40,10 +40,12 @@ if [[ "$DADEFILE_IMAGE_RESOURCES_DIR_PATH" != "" ]]; then
 		"$builddir/$DADEFILE_IMAGE_RESOURCES_DIR_BUILD_PATH" \
 		"${image_resources_files[@]}"
 fi
+mkdir "$builddir/_dade_integration"
 if [[ -e "$DADEROOT/integrations/$DADEFILE_TYPE" ]]; then
-	mkdir "$builddir/_dade_integration"
-	cp -R "$DADEROOT/integrations/$DADEFILE_TYPE" "$builddir/_dade_integration/"
+	cp -dpR "$DADEROOT/integrations/$DADEFILE_TYPE"/* "$builddir/_dade_integration/"
 fi
+# Make this directory cache friendly.
+touch -t 201401010000 "$builddir/_dade_integration"
 
 # Preprocess Dockerfile and put it in the build directory.
 "$DADEROOT/scripts/process_dockerfile_dade.rb" \
@@ -53,4 +55,4 @@ fi
 
 # Run 'docker build'.
 pushd "$builddir"
-docker build -t "$DADEFILE_NAME:$DADEFILE_VERSION.dev" .
+docker build --rm -t "$DADEFILE_NAME:$DADEFILE_VERSION.dev" .
