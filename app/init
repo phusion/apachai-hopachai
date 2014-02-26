@@ -9,6 +9,7 @@ export LC_ALL=C.UTF-8
 echo $DADE_ENV > /etc/container_environment/DADE_ENV
 echo $RAILS_ENV > /etc/container_environment/RAILS_ENV
 echo $RACK_ENV > /etc/container_environment/RACK_ENV
+sed -i "s/server {/server {\nrails_env $DADE_ENV;\n/" /etc/nginx/sites-enabled/webui.conf
 
 echo " --> Initializing gem bundle"
 rm -rf /app/.bundle /app/webui/.bundle
@@ -39,7 +40,7 @@ else
 	rm -rf /etc/service/postgresql/supervise
 	(cd /etc/service && exec runsv postgresql) &
 	while ! [[ -e /etc/service/postgresql/supervise/ok ]]; do
-		sleep 0.5
+		sleep 0.1
 	done
 	sv start /etc/service/postgresql
 	sleep 0.5
@@ -65,6 +66,7 @@ else
 
 	echo " --> Stopping database server"
 	sv stop /etc/service/postgresql
-	sv down /etc/service/postgresql
-	sleep 1
+	pid=`ps -A -opid,command | grep ' runsv postgresql' | grep -v grep | awk '{ print $1 }'`
+	kill $pid
+	sleep 0.5
 fi
