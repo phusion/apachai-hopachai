@@ -65,7 +65,7 @@ private
   def generate_key_pairs
     key = OpenSSL::PKey::RSA.new(4096)
     Dir.mktmpdir do |path|
-      pid = Process.spawn("ssh-keygen", "-C", "apachai-hopachai", "-b", "4096", "-f", "#{path}/key",
+      pid = Process.spawn("ssh-keygen", "-N", "", "-C", "apachai-hopachai", "-b", "4096", "-f", "#{path}/key",
         :in  => ["/dev/null", "r"],
         :out => :out,
         :err => :err,
