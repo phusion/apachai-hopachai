@@ -28,27 +28,27 @@ if [[ "$DADE_ENV" == production ]]; then
 	fi
 	ln -s ../_dade_rails_assets assets
 	popd 2>/dev/null
+fi
 
-	if [[ "$RAILS_DB_MIGRATE" = 0 ]]; then
-		echo " --> RAILS_DB_MIGRATE=0 set, skipping database migrations"
+if [[ "$RAILS_DB_MIGRATE" = 0 ]]; then
+	echo " --> RAILS_DB_MIGRATE=0 set, skipping database migrations"
+else
+	echo " --> Inspecting database state"
+	pushd /app >/dev/null
+	if setuser app bundle exec rake db:version >/tmp/db_version 2>/dev/null; then
+		db_version=`cat /tmp/db_version | sed 's/.*: //'`
+		rm /tmp/db_version
 	else
-		echo " --> Inspecting database state"
-		pushd /app >/dev/null
-		if setuser app bundle exec rake db:version >/tmp/db_version 2>/dev/null; then
-			db_version=`cat /tmp/db_version | sed 's/.*: //'`
-			rm /tmp/db_version
-		else
-			db_version=0
-		fi
-		if [[ "$db_version" = 0 ]]; then
-			echo "     Database is empty"
-			echo " --> Setting up new database"
-			setuser app bundle exec rake db:create db:setup
-		else
-			echo "     Existing database found"
-			echo " --> Running database migrations"
-			setuser app bundle exec rake db:migrate
-		fi
-		popd 2>/dev/null
+		db_version=0
 	fi
+	if [[ "$db_version" = 0 ]]; then
+		echo "     Database is empty"
+		echo " --> Setting up new database"
+		setuser app bundle exec rake db:create db:setup
+	else
+		echo "     Existing database found"
+		echo " --> Running database migrations"
+		setuser app bundle exec rake db:migrate
+	fi
+	popd 2>/dev/null
 fi

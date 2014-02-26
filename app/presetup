@@ -10,6 +10,13 @@ function apt_get_install()
 
 set -x
 
+# Set locale so that PostgreSQL creates template databases in UTF-8 encoding.
+export LANGUAGE=en_US.UTF-8
+export LANG=en_US.UTF-8
+export LC_ALL=en_US.UTF-8
+locale-gen en_US.UTF-8
+dpkg-reconfigure locales
+
 # Add APT sources.
 if ! [[ -e /etc/apt/sources.list.d/docker.list ]]; then
 	if ! [[ -e /usr/bin/wget ]]; then

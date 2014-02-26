@@ -30,6 +30,11 @@ cd "$SELFDIR"
 #####################################################
 
 
+# Set locale so that PostgreSQL creates template databases in UTF-8 encoding.
+export LANGUAGE=en_US.UTF-8
+export LANG=en_US.UTF-8
+export LC_ALL=en_US.UTF-8
+
 # Fix up permissions and directories.
 mkdir -p webui/log
 chown -R app: .
@@ -66,8 +71,8 @@ cp resources/run_sidekiq /etc/service/sidekiq/run
 
 # Setup app server.
 rm -f /etc/service/nginx/down
-cp resources/webui.conf /etc/nginx/sites-available/
-rm /etc/nginx/sites-available/default
+cp resources/webui.conf /etc/nginx/sites-enabled/
+rm /etc/nginx/sites-enabled/default
 
 pushd webui
 
