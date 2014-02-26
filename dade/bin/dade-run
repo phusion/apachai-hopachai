@@ -13,16 +13,15 @@ if ! [[ `id -a` =~ fuse ]]; then
 	exit 1
 fi
 
-"$DADEROOT/scripts/prepare_keys_for_sshfs"
 dump=$("$DADEROOT/scripts/dump.rb" Dadefile)
 eval "$dump"
 
-sshfs_options=ssh_command=$DADEROOT/scripts/ssh,idmap=user,allow_other
+bindfs_options=
 if [[ "$DADEFILE_APP_MOUNT_UID" != "" ]]; then
-	sshfs_options="$sshfs_options,uid=$DADEFILE_APP_MOUNT_UID"
+	bindfs_options="$bindfs_options -u $DADEFILE_APP_MOUNT_UID"
 fi
 if [[ "$DADEFILE_APP_MOUNT_GID" != "" ]]; then
-	sshfs_options="$sshfs_options,gid=$DADEFILE_APP_MOUNT_GID"
+	bindfs_options="$bindfs_options -g $DADEFILE_APP_MOUNT_GID"
 fi
 
 docker_options="-rm $DADEFILE_DOCKER_RUN_OPTIONS"
@@ -47,5 +46,5 @@ function cleanup()
 }
 
 mkdir "$workdir/mount"
-sshfs -o $sshfs_options localhost:`pwd`/$DADEFILE_APP_DIR_PATH/ "$workdir/mount"
+bindfs $bindfs_options `pwd`/$DADEFILE_APP_DIR_PATH "$workdir/mount"
 docker run -t -i -e DADE_ENV=development $docker_options -v "$workdir/mount":/app $DADEFILE_NAME:$DADEFILE_VERSION.dev

@@ -10,6 +10,14 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.box_url = "https://oss-binaries.phusionpassenger.com/vagrant/boxes/ubuntu-12.04.3-amd64-vbox.box"
   config.vm.network :forwarded_port, :host => 3000, :guest => 3000
   config.ssh.forward_agent = true
+  if File.directory?("#{ROOT}/../baseimage-docker")
+    config.vm.synced_folder File.expand_path("#{ROOT}/../baseimage-docker"),
+      "/vagrant/baseimage-docker"
+  end
+  if File.directory?("#{ROOT}/../passenger-docker")
+    config.vm.synced_folder File.expand_path("#{ROOT}/../passenger-docker"),
+      "/vagrant/passenger-docker"
+  end
 
   config.vm.provider :vmware_fusion do |f, override|
     override.vm.box_url = "https://oss-binaries.phusionpassenger.com/vagrant/boxes/ubuntu-12.04.3-amd64-vmwarefusion.box"

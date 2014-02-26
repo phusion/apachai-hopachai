@@ -46,12 +46,6 @@ start_runit_service postgresql
 # Setup PostgreSQL authentication.
 sudo -u postgres -H createuser -s -r app
 
-# Setup PostgreSQL databases.
-databases=`sudo -u postgres -H psql <<<"select datname from pg_database where datistemplate = false"`
-sudo -u postgres -H createdb appa_dev
-sudo -u postgres -H createdb appa_test
-sudo -u postgres -H createdb appa_prod
-
 # Shut down all daemons.
 for service in /etc/service/*; do
 	if [[ -e $service/supervise/ok ]]; then
