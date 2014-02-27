@@ -9,10 +9,10 @@ export DOCKER_HOST=unix:///docker.sock
 export LANGUAGE=en_US.UTF-8
 export LANG=en_US.UTF-8
 export LC_ALL=en_US.UTF-8
-echo $DADE_ENV > /etc/container_environment/DADE_ENV
-echo $RAILS_ENV > /etc/container_environment/RAILS_ENV
-echo $RACK_ENV > /etc/container_environment/RACK_ENV
-echo $DOCKER_HOST > /etc/container_environment/DOCKER_HOST
+echo -n $DADE_ENV > /etc/container_environment/DADE_ENV
+echo -n $RAILS_ENV > /etc/container_environment/RAILS_ENV
+echo -n $RACK_ENV > /etc/container_environment/RACK_ENV
+echo -n $DOCKER_HOST > /etc/container_environment/DOCKER_HOST
 
 function start_postgresql()
 {
@@ -42,6 +42,7 @@ if ! [[ -e /var/lib/postgresql/9.1 ]]; then
 	pg_createcluster 9.1 main
 	start_postgresql
 	setuser postgres createuser -s -r app
+	#setuser postgres psql <<<"ALTER USER app WITH PASSWORD 'app'"
 	stop_postgresql
 fi
 
@@ -79,7 +80,7 @@ else
 
 	echo " --> Inspecting database state"
 	pushd /app/webui >/dev/null
-	if setuser app bundle exec rake db:version >/tmp/db_version 2>/dev/null; then
+	if setuser app ./bin/rake db:version >/tmp/db_version 2>/dev/null; then
 		db_version=`cat /tmp/db_version | sed 's/.*: //'`
 		rm /tmp/db_version
 	else
@@ -88,11 +89,11 @@ else
 	if [[ "$db_version" = 0 ]]; then
 		echo "     Database is empty"
 		echo " --> Setting up new database"
-		setuser app bundle exec rake db:create db:setup db:seed
+		setuser app ./bin/rake db:create db:setup db:seed
 	else
 		echo "     Existing database found"
 		echo " --> Running database migrations"
-		setuser app bundle exec rake db:migrate db:seed
+		setuser app ./bin/rake db:migrate db:seed
 	fi
 	popd
 

@@ -5,9 +5,9 @@ set -e
 export DADE_ENV=${DADE_ENV:-${RAILS_ENV:-${RACK_ENV:-production}}}
 export RAILS_ENV=$DADE_ENV
 export RACK_ENV=$DADE_ENV
-echo $DADE_ENV > /etc/container_environment/DADE_ENV
-echo $RAILS_ENV > /etc/container_environment/RAILS_ENV
-echo $RACK_ENV > /etc/container_environment/RACK_ENV
+echo -n $DADE_ENV > /etc/container_environment/DADE_ENV
+echo -n $RAILS_ENV > /etc/container_environment/RAILS_ENV
+echo -n $RACK_ENV > /etc/container_environment/RACK_ENV
 
 echo " --> Initializing gem bundle"
 rm -rf /app/.bundle

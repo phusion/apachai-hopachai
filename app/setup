@@ -42,7 +42,8 @@ cp resources/run_sidekiq /etc/service/sidekiq/run
 rm -f /etc/service/nginx/down
 cp resources/webui.conf /etc/nginx/sites-enabled/
 rm /etc/nginx/sites-enabled/default
-sed -i 's/daemon off;/daemon off;\nenv PATH;\nenv DOCKER_HOST;/' /etc/nginx/nginx.conf
+sed -i 's|daemon off;|daemon off;\ninclude /etc/nginx/main.conf;|' /etc/nginx/nginx.conf
+cp resources/nginx_main.conf /etc/nginx/main.conf
 
 pushd webui
 
