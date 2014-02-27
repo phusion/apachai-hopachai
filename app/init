@@ -5,11 +5,50 @@ set -e
 export DADE_ENV=${DADE_ENV:-${RAILS_ENV:-${RACK_ENV:-production}}}
 export RAILS_ENV=$DADE_ENV
 export RACK_ENV=$DADE_ENV
-export LC_ALL=C.UTF-8
+export DOCKER_HOST=unix:///docker.sock
+export LANGUAGE=en_US.UTF-8
+export LANG=en_US.UTF-8
+export LC_ALL=en_US.UTF-8
 echo $DADE_ENV > /etc/container_environment/DADE_ENV
 echo $RAILS_ENV > /etc/container_environment/RAILS_ENV
 echo $RACK_ENV > /etc/container_environment/RACK_ENV
+echo $DOCKER_HOST > /etc/container_environment/DOCKER_HOST
+
+function start_postgresql()
+{
+	echo " --> Starting database server"
+	rm -rf /etc/service/postgresql/supervise
+	(cd /etc/service && exec runsv postgresql) &
+	while ! [[ -e /etc/service/postgresql/supervise/ok ]]; do
+		sleep 0.1
+	done
+	sv start /etc/service/postgresql
+	sleep 0.5
+}
+
+function stop_postgresql()
+{
+	echo " --> Stopping database server"
+	sv stop /etc/service/postgresql
+	pid=`ps -A -opid,command | grep ' runsv postgresql' | grep -v grep | awk '{ print $1 }'`
+	kill $pid
+	sleep 0.5
+}
+
+if ! [[ -e /var/lib/postgresql/9.1 ]]; then
+	echo " --> Initializing PostgreSQL"
+	chown -R postgres:postgres /var/lib/postgresql
+	pg_dropcluster 9.1 main || true
+	pg_createcluster 9.1 main
+	start_postgresql
+	setuser postgres createuser -s -r app
+	stop_postgresql
+fi
+
 sed -i "s/server {/server {\nrails_env $DADE_ENV;\n/" /etc/nginx/sites-enabled/webui.conf
+
+echo " --> Pulling sandbox image"
+docker pull phusion/apachai-hopachai-sandbox
 
 echo " --> Initializing gem bundle"
 rm -rf /app/.bundle /app/webui/.bundle
@@ -36,14 +75,7 @@ fi
 if [[ "$RAILS_DB_MIGRATE" == "0" ]]; then
 	echo " --> RAILS_DB_MIGRATE=0 set, skipping database migrations"
 else
-	echo " --> Starting database server"
-	rm -rf /etc/service/postgresql/supervise
-	(cd /etc/service && exec runsv postgresql) &
-	while ! [[ -e /etc/service/postgresql/supervise/ok ]]; do
-		sleep 0.1
-	done
-	sv start /etc/service/postgresql
-	sleep 0.5
+	start_postgresql
 
 	echo " --> Inspecting database state"
 	pushd /app/webui >/dev/null
@@ -56,17 +88,13 @@ else
 	if [[ "$db_version" = 0 ]]; then
 		echo "     Database is empty"
 		echo " --> Setting up new database"
-		setuser app bundle exec rake db:create db:setup
+		setuser app bundle exec rake db:create db:setup db:seed
 	else
 		echo "     Existing database found"
 		echo " --> Running database migrations"
-		setuser app bundle exec rake db:migrate
+		setuser app bundle exec rake db:migrate db:seed
 	fi
 	popd
 
-	echo " --> Stopping database server"
-	sv stop /etc/service/postgresql
-	pid=`ps -A -opid,command | grep ' runsv postgresql' | grep -v grep | awk '{ print $1 }'`
-	kill $pid
-	sleep 0.5
+	stop_postgresql
 fi

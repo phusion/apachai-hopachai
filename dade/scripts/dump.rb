@@ -15,6 +15,18 @@ def dump_array(value, name)
   end
 end
 
+def dump_bind_mounts(value, name)
+  if value
+    value = value.map do |item|
+      from, to, modifier = item.split(":", 3)
+      from = File.absolute_path(from)
+      [from, to, modifier].compact.join(":")
+    end
+    str = value.join(" ")
+    puts "DADEFILE_#{name}=#{Shellwords.escape str}"
+  end
+end
+
 def dump_dadefile(dadefile)
   dump_key(dadefile['name'], 'NAME')
   dump_key(dadefile['version'], 'VERSION')
@@ -28,6 +40,7 @@ def dump_dadefile(dadefile)
   dump_key(dadefile['app_mount_gid'], 'APP_MOUNT_GID')
   dump_key(dadefile['privileged'], 'PRIVILEGED')
   dump_array(dadefile['port_forwards'], 'PORT_FORWARDS')
+  dump_bind_mounts(dadefile['bind_mounts'], 'BIND_MOUNTS')
   dump_key(dadefile['docker_run_options'], 'DOCKER_RUN_OPTIONS')
 end
 

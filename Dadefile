@@ -7,3 +7,6 @@ app_mount_gid: 9999
 privileged: true
 port_forwards:
   - 3000:80
+bind_mounts:
+  - /var/run/docker.sock:/docker.sock
+  - /home/vagrant/postgresql:/var/lib/postgresql

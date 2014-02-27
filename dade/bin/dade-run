@@ -33,11 +33,17 @@ if [[ "$DADEFILE_PORT_FORWARDS" != "" ]]; then
 		docker_options="$docker_options -p $spec"
 	done
 fi
+if [[ "$DADEFILE_BIND_MOUNTS" != "" ]]; then
+	for spec in $DADEFILE_BIND_MOUNTS; do
+		docker_options="$docker_options -v $spec"
+	done
+fi
 
 workdir=`mktemp -d /tmp/dademount.XXXXXXX`
 
 function cleanup()
 {
+	rm -f .dade_container
 	echo " --> Unmounting app directory"
 	sudo umount "$workdir/mount" 2>/dev/null ||
 		sudo umount -l "$workdir/mount"
@@ -47,4 +53,4 @@ function cleanup()
 
 mkdir "$workdir/mount"
 bindfs $bindfs_options `pwd`/$DADEFILE_APP_DIR_PATH "$workdir/mount"
-docker run -t -i -e DADE_ENV=development $docker_options -v "$workdir/mount":/app $DADEFILE_NAME:$DADEFILE_VERSION.dev
+docker run -t -i -e DADE_ENV=development $docker_options --cidfile .dade_container -v "$workdir/mount":/app $DADEFILE_NAME:$DADEFILE_VERSION.dev

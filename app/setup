@@ -6,21 +6,6 @@ function apt_get_install()
 	apt-get install -q -y --force-yes --no-install-recommends "$@"
 }
 
-function start_runit_service()
-{
-	if [[ $TARGET_USER != vagrant ]]; then
-		(cd /etc/service && exec runsv $1) &
-	fi
-	while ! [[ -e /etc/service/$1/supervise/ok ]]; do
-		sleep 1
-	done
-	sv start /etc/service/$1 || {
-		cat webui/log/*.log
-		exit 1
-	}
-	sleep 1
-}
-
 export DEBIAN_FRONTEND=noninteractive
 SELFDIR=`dirname "$0"`
 set -x
@@ -40,30 +25,14 @@ mkdir -p webui/log
 chown -R app: .
 
 # Setup PostgreSQL service.
-update-rc.d -f postgresql remove
-if ! [[ -e /etc/service/postgresql/run ]]; then
-	service postgresql stop
-fi
 mkdir -p /etc/service/postgresql
 cp resources/run_postgresql /etc/service/postgresql/run
-start_runit_service postgresql
-
-# Setup PostgreSQL authentication.
-sudo -u postgres -H createuser -s -r app
-
-# Shut down all daemons.
-for service in /etc/service/*; do
-	if [[ -e $service/supervise/ok ]]; then
-		sv stop $service
-	fi
-done
 
 # Setup Redis.
 apt-get install -y redis-server libhiredis-dev
 mkdir -p /etc/service/redis
 cp resources/redis.conf /etc/redis/redis.conf
 cp resources/run_redis /etc/service/redis/run
-start_runit_service redis
 
 # Setup Sidekiq.
 mkdir -p /etc/service/sidekiq
@@ -73,7 +42,7 @@ cp resources/run_sidekiq /etc/service/sidekiq/run
 rm -f /etc/service/nginx/down
 cp resources/webui.conf /etc/nginx/sites-enabled/
 rm /etc/nginx/sites-enabled/default
-sed -i 's/daemon off;/daemon off;\nenv PATH;/' /etc/nginx/nginx.conf
+sed -i 's/daemon off;/daemon off;\nenv PATH;\nenv DOCKER_HOST;/' /etc/nginx/nginx.conf
 
 pushd webui
 

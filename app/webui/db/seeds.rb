@@ -6,7 +6,8 @@
 #   cities = City.create([{ name: 'Chicago' }, { name: 'Copenhagen' }])
 #   Mayor.create(name: 'Emanuel', city: cities.first)
 
-if !User.exists?(:username => 'admin')
+if User.count == 0
+  puts "Creating admin user"
   User.create!(
     :username => 'admin',
     :email => 'admin@example.com',
@@ -14,7 +15,7 @@ if !User.exists?(:username => 'admin')
     :password => 'password',
     :password_confirmation => 'password')
 end
-if Rails.env.development?
+if Rails.env.development? && Repo.count == 0
   passenger = Repo.create!(:owner => User.find_by(:username => 'admin'),
     :name => 'passenger',
     :url => 'https://github.com/phusion/passenger.git')

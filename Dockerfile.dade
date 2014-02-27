@@ -6,4 +6,5 @@ PRERUN /tmp/presetup && rm /tmp/presetup
 
 RUN /app/setup app && apt-get clean
 
+VOLUME ["/var/lib/postgresql"]
 CMD ["/sbin/my_init"]

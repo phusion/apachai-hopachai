@@ -5,3 +5,4 @@ vendor
 /tmp
 /*.tar.gz
 /output
+/app/webui/public/assets
