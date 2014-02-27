@@ -16,8 +16,10 @@ module ApachaiHopachai
 
   def self.config
     # TODO: introduce config file
-    { 'storage_path' => File.expand_path("#{APP_ROOT}/webui/tmp"),
-      'email_from' => 'from@example.com' }
+    @@config ||= {
+      'storage_path' => File.expand_path("#{APP_ROOT}/webui/tmp"),
+      'email_from' => ENV['EMAIL_FROM'] || 'from@example.com'
+    }
   end
 
   def self.default_logger
