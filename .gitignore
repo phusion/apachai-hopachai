@@ -1,8 +1,10 @@
 .DS_Store
 .bundle
+/.dade_container
 /.vagrant*
-vendor
 /tmp
 /*.tar.gz
 /output
 /app/webui/public/assets
+/soft-lockups
+/TODO

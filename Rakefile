@@ -20,9 +20,15 @@ end
 
 desc "Login to the container"
 task :shell do
-  lxc_attach("exec bash")
+  lxc_attach("cd /app/webui && exec setuser app bash")
 end
 
+desc "Login to the container"
+task :root_shell do
+  lxc_attach("cd /app/webui && exec bash")
+end
+
+desc "Start an irb console for the web app"
 task :irb do
   lxc_attach("cd /app/webui && exec setuser app ./bin/rails console")
 end

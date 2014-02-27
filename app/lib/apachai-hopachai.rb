@@ -1,7 +1,7 @@
 # encoding: utf-8
 module ApachaiHopachai
   VERSION_STRING       = '1.0.0'
-  APP_ROOT             = File.expand_path(File.dirname(__FILE__) + "/..")
+  APP_ROOT             = File.absolute_path(File.dirname(__FILE__) + "/..")
   DATABASE_CONFIG_FILE = "#{APP_ROOT}/config/database.yml"
   BIN_DIR              = "#{APP_ROOT}/bin"
   MODELS_DIR           = "#{APP_ROOT}/models"
@@ -16,7 +16,7 @@ module ApachaiHopachai
 
   def self.config
     # TODO: introduce config file
-    { 'storage_path' => File.expand_path("#{APP_ROOT}/../tmp"),
+    { 'storage_path' => File.expand_path("#{APP_ROOT}/webui/tmp"),
       'email_from' => 'from@example.com' }
   end
 
