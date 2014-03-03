@@ -1,4 +1,4 @@
-name: apachai-hopachai
+name: phusion/apachai-hopachai
 version: 1.0
 type: custom
 app_dir: app

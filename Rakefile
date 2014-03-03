@@ -13,6 +13,14 @@ task :build do
   sh "./dade/bin/dade build"
 end
 
+desc "Upload sandbox image to Docker registry"
+task :release_app => :build do
+  version = `./dade/scripts/dump.rb Dadefile | grep DADEFILE_VERSION | sed 's/.*=//'`.strip
+  sh "docker tag phusion/apachai-hopachai:#{version}.dev phusion/apachai-hopachai:#{version}"
+  sh "docker tag phusion/apachai-hopachai:#{version} phusion/apachai-hopachai:latest"
+  sh "docker push phusion/apachai-hopachai"
+end
+
 desc "Run the application container"
 task :run do
   sh "./dade/bin/dade run"

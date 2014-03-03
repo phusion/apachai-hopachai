@@ -20,6 +20,12 @@ trap cleanup EXIT
 dump=$("$DADEROOT/scripts/dump.rb" Dadefile)
 eval "$dump"
 
+if [[ "$1" == "--production" ]]; then
+	IMAGE_SUFFIX=
+else
+	IMAGE_SUFFIX=.dev
+fi
+
 # List all app files.
 IFS=$'\n'
 app_files=(`"$DADEROOT/scripts/list_files.rb" "$DADEFILE_APP_DIR_PATH"`)
@@ -55,4 +61,4 @@ touch -t 201401010000 "$builddir/_dade_integration"
 
 # Run 'docker build'.
 pushd "$builddir"
-docker build --rm -t "$DADEFILE_NAME:$DADEFILE_VERSION.dev" .
+docker build --rm -t "$DADEFILE_NAME:$DADEFILE_VERSION$IMAGE_SUFFIX" .
