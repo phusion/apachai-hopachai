@@ -23,6 +23,9 @@ function start_postgresql()
 		sleep 0.1
 	done
 	sv start /etc/service/postgresql
+	while ! [[ -e /var/run/postgresql/.s.PGSQL.5432 ]]; do
+		sleep 0.1
+	done
 	sleep 2
 }
 
