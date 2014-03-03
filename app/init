@@ -23,7 +23,7 @@ function start_postgresql()
 		sleep 0.1
 	done
 	sv start /etc/service/postgresql
-	sleep 0.5
+	sleep 2
 }
 
 function stop_postgresql()
@@ -32,7 +32,7 @@ function stop_postgresql()
 	sv stop /etc/service/postgresql
 	pid=`ps -A -opid,command | grep ' runsv postgresql' | grep -v grep | awk '{ print $1 }'`
 	kill $pid
-	sleep 0.5
+	sleep 1
 }
 
 if ! [[ -e /var/lib/postgresql/9.1 ]]; then
@@ -42,7 +42,6 @@ if ! [[ -e /var/lib/postgresql/9.1 ]]; then
 	pg_createcluster 9.1 main
 	start_postgresql
 	setuser postgres createuser -s -r app
-	#setuser postgres psql <<<"ALTER USER app WITH PASSWORD 'app'"
 	stop_postgresql
 fi
 
