@@ -13,6 +13,7 @@ echo -n $DADE_ENV > /etc/container_environment/DADE_ENV
 echo -n $RAILS_ENV > /etc/container_environment/RAILS_ENV
 echo -n $RACK_ENV > /etc/container_environment/RACK_ENV
 echo -n $DOCKER_HOST > /etc/container_environment/DOCKER_HOST
+echo "rails_env $DADE_ENV;" > /etc/nginx/rails_env.conf
 
 function start_postgresql()
 {
@@ -47,8 +48,6 @@ if ! [[ -e /var/lib/postgresql/9.1 ]]; then
 	setuser postgres createuser -s -r app
 	stop_postgresql
 fi
-
-sed -i "s/server {/server {\nrails_env $DADE_ENV;\n/" /etc/nginx/sites-enabled/webui.conf
 
 echo " --> Pulling sandbox image"
 docker pull phusion/apachai-hopachai-sandbox
