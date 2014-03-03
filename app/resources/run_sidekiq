@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
 cd /app/webui
+touch log/sidekiq.log
+chown app: log/sidekiq.log
 export JOB_CONCURRENCY=${JOB_CONCURRENCY:-2}
 exec /sbin/setuser app /app/bin/sidekiq \
 	-C ../config/sidekiq.yml \
