@@ -33,7 +33,16 @@ if ! [[ -e /etc/apt/sources.list.d/brightbox.list ]]; then
 	apt-key adv --keyserver keyserver.ubuntu.com --recv-keys C3173AA6
 	echo deb http://ppa.launchpad.net/brightbox/ruby-ng/ubuntu precise main > /etc/apt/sources.list.d/brightbox.list
 fi
+if ! [[ -e /etc/apt/sources.list.d/docker.list ]]; then
+	curl https://get.docker.io/gpg | apt-key add -
+	echo deb http://get.docker.io/ubuntu docker main > /etc/apt/sources.list.d/docker.list
+fi
 
 apt-get update
-apt_get_install ruby2.1 ruby-switch wget
+apt_get_install ruby2.1 ruby-switch wget lxc-docker cgroup-lite
+usermod -a -G docker vagrant
 ruby-switch --set ruby2.1
+
+if ! [[ -e /usr/local/bin/rake ]]; then
+	gem install rake --no-rdoc --no-ri
+fi
