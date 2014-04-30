@@ -24,9 +24,9 @@ if [[ "$DADEFILE_APP_MOUNT_GID" != "" ]]; then
 	bindfs_options="$bindfs_options -g $DADEFILE_APP_MOUNT_GID"
 fi
 
-docker_options="-rm $DADEFILE_DOCKER_RUN_OPTIONS"
+docker_options="--rm $DADEFILE_DOCKER_RUN_OPTIONS"
 if [[ "$DADEFILE_PRIVILEGED" = true ]]; then
-	docker_options="$docker_options -privileged"
+	docker_options="$docker_options --privileged"
 fi
 if [[ "$DADEFILE_PORT_FORWARDS" != "" ]]; then
 	for spec in $DADEFILE_PORT_FORWARDS; do
