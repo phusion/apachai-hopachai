@@ -38,8 +38,13 @@ if ! [[ -e /etc/apt/sources.list.d/docker.list ]]; then
 	echo deb http://get.docker.io/ubuntu docker main > /etc/apt/sources.list.d/docker.list
 fi
 
+# So that we can use lxc-attach
+echo "export DOCKER_OPTS=--exec-driver=lxc" > /etc/default/docker
+
 apt-get update
-apt_get_install ruby2.1 ruby-switch wget lxc-docker cgroup-lite bindfs
+# Must be installed before Docker because Docker is now configured to use the LXC driver.
+apt_get install lxc cgroup-lite
+apt_get_install ruby2.1 ruby-switch wget lxc-docker bindfs
 usermod -a -G docker vagrant
 usermod -a -G fuse vagrant
 ruby-switch --set ruby2.1
