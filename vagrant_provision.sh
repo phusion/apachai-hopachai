@@ -43,7 +43,7 @@ echo "export DOCKER_OPTS=--exec-driver=lxc" > /etc/default/docker
 
 apt-get update
 # Must be installed before Docker because Docker is now configured to use the LXC driver.
-apt_get install lxc cgroup-lite
+apt_get_install lxc cgroup-lite
 apt_get_install ruby2.1 ruby-switch wget lxc-docker bindfs
 usermod -a -G docker vagrant
 usermod -a -G fuse vagrant
