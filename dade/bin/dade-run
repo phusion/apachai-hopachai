@@ -17,6 +17,11 @@ dump=$("$DADEROOT/scripts/dump.rb" Dadefile)
 eval "$dump"
 
 bindfs_options=
+if mount | grep vmhgfs; then
+	# VMWare Shared Folders do not allow chowning anything, even to the current owner.
+	# We ignore chown/chgrp requests to avoid errors.
+	bindfs_options="--chown-ignore --chgrp-ignore"
+fi
 if [[ "$DADEFILE_APP_MOUNT_UID" != "" ]]; then
 	bindfs_options="$bindfs_options -u $DADEFILE_APP_MOUNT_UID"
 fi
