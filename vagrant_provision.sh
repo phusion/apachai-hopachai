@@ -39,9 +39,11 @@ if ! [[ -e /etc/apt/sources.list.d/docker.list ]]; then
 fi
 
 apt-get update
-apt_get_install ruby2.1 ruby-switch wget lxc-docker cgroup-lite
+apt_get_install ruby2.1 ruby-switch wget lxc-docker cgroup-lite bindfs
 usermod -a -G docker vagrant
+usermod -a -G fuse vagrant
 ruby-switch --set ruby2.1
+sed -i 's/#user_allow_other/user_allow_other/' /etc/fuse.conf
 
 if ! [[ -e /usr/local/bin/rake ]]; then
 	gem install rake --no-rdoc --no-ri
