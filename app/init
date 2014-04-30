@@ -39,6 +39,9 @@ function stop_postgresql()
 	sleep 1
 }
 
+docker_gid=`stat -c %g /docker.sock`
+groupmod -g $docker_gid docker
+
 if ! [[ -e /var/lib/postgresql/9.1 ]]; then
 	echo " --> Initializing PostgreSQL"
 	chown -R postgres:postgres /var/lib/postgresql
